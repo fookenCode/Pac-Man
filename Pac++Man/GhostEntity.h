@@ -1,0 +1,36 @@
+/****************************************************************************
+File: GhostEntity.h
+Author: fookenCode
+****************************************************************************/
+#ifndef _GHOST_ENTITY_H_
+#define _GHOST_ENTITY_H_
+
+#include "Entity.h"
+
+class GhostEntity : public Entity {
+private:
+	enum GHOST_STATE {INVULNERABLE=0,VULNERABLE};
+	int mVulnerableStatus,mColor;
+	char mGhostIcon;
+	bool mActive;
+
+public:
+	GhostEntity();
+	virtual ~GhostEntity() { }
+
+	void setActive(bool status) { this->mActive = status; }
+	bool isActive() { return this->mActive; }
+
+	void setGhostColor(int color) { this->mColor = color; }
+	int getGhostColor() { return (mVulnerableStatus == VULNERABLE)? GHOST_BLUE:this->mColor; }
+
+	void setGhostIcon(char icon) { this->mGhostIcon = icon; }
+	char getGhostIcon() { return this->mGhostIcon; }
+
+	void setVulnerable(bool status) { (status) ? mVulnerableStatus = VULNERABLE : mVulnerableStatus = INVULNERABLE; }
+	bool isVulnerable() { return (mVulnerableStatus == VULNERABLE); }
+
+	virtual void render();
+	virtual void reset();
+};
+#endif // _GHOST_ENTITY_H_
