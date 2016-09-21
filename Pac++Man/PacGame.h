@@ -7,6 +7,7 @@ TODO: Make class Singleton
 #define _PAC_GAME_H_
 
 #include <Windows.h>
+#include <random>
 #include "Constants.h"
 #include "GameMap.h"
 #include "GhostEntity.h"
@@ -62,12 +63,13 @@ public:
 				mGhosts[i].setActive(true);
 				mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
 				mGhosts[i].setYPos(AI_BOX_ACTIVE_Y_POSITION);
+				mGhosts[i].setMovementDirection(LEFT);
+				mGhosts[i].setMovementSpeed(1);
 			}
 			else {
 				mGhosts[i].setXPos(DEFAULT_AI_X_POSITION + i);
 				mGhosts[i].setYPos(DEFAULT_AI_Y_POSITION);
 			}
-			mGameMap.setCharacterAtPosition(mGhosts[i].getGhostIcon(), mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
 		}
 		
 		// Render all components
@@ -181,13 +183,30 @@ public:
 				continue;
 			}
 
-			mGhosts[i].setMovementDirection(LEFT);
-			mGhosts[i].setMovementSpeed(1);
-			if (CanMoveInSpecifiedDirection(mGhosts[i].getMovementDirection(), mGhosts[i].getXPosition(), mGhosts[i].getYPosition()))
-			{
+			bool canMoveCurr, canMoveNext = false;
+			int nextMoveDir = MAX_DIRECTION;
+			canMoveCurr = CanMoveInSpecifiedDirection(mGhosts[i].getMovementDirection(), mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+			switch (mGhosts[i].getMovementDirection()) {
+			case LEFT:
+			case RIGHT:
+				nextMoveDir = (mGhosts[i].getYPosition() < mPlayer.getYPosition()) ? DOWN : UP;
+				canMoveNext = CanMoveInSpecifiedDirection(nextMoveDir, mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+				break;
+			case UP:
+			case DOWN:
+				nextMoveDir = (mGhosts[i].getXPosition() < mPlayer.getXPosition()) ? RIGHT : LEFT;
+				canMoveNext = CanMoveInSpecifiedDirection(nextMoveDir, mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+				break;
+			default:
+				break;
+			};
+			if (canMoveNext || !canMoveCurr) {
+				mGhosts[i].setMovementDirection(nextMoveDir);
+			}
+			if (canMoveNext || canMoveCurr) {
 				MoveAI(mGhosts[i]);
 			}
-		}
+		} // END For(i<MAX_ENEMIES)
 	} // END UpdateAICharacters
 
 	/****************************************************************************
@@ -205,14 +224,19 @@ public:
 		int yPos = entity.getYPosition();
 		int nextPos = 0;
 		char charAtNext;
-		mGameMap.setCharacterAtPosition(' ', xPos, yPos);
+		COORD Position;
+		Position.X = xPos + SCREEN_OFFSET_MARGIN;
+		Position.Y = yPos;
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+		cout << mGameMap.getCharacterAtPosition(xPos, yPos);
+		//SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+
 		switch (movementDirection)
 		{
 		case LEFT:
 			nextPos = xPos - movementSpeed;
 			if (nextPos == 0)
 			{
-				mGameMap.setCharacterAtPosition(entity.getGhostIcon(), DEFAULT_MAP_EDGE, yPos);
 				entity.setXPos(DEFAULT_MAP_EDGE);
 			}
 			else
@@ -223,7 +247,6 @@ public:
 					mPlayer.reset();
 					lives--;
 				}
-				mGameMap.setCharacterAtPosition(entity.getGhostIcon(), nextPos, yPos);
 				entity.setXPos(nextPos);
 			}
 
@@ -232,7 +255,6 @@ public:
 			nextPos = xPos + movementSpeed;
 			if (nextPos > DEFAULT_MAP_EDGE)
 			{
-				mGameMap.setCharacterAtPosition(entity.getGhostIcon(), 0, yPos);
 				entity.setXPos(0);
 			}
 			else
@@ -243,8 +265,7 @@ public:
 					mPlayer.reset();
 					lives--;
 				}
-				mGameMap.setCharacterAtPosition(entity.getGhostIcon(), nextPos, yPos);
-				mPlayer.setXPos(nextPos);
+				entity.setXPos(nextPos);
 			}
 			break;
 		case UP:
@@ -255,19 +276,17 @@ public:
 				mPlayer.reset();
 				lives--;
 			}
-			mGameMap.setCharacterAtPosition(entity.getGhostIcon(), xPos, nextPos);
-			mPlayer.setYPos(nextPos);
+			entity.setYPos(nextPos);
 			break;
 		case DOWN:
 			nextPos = yPos + movementSpeed;
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-			if (charAtNext == 'ú')
+			if (charAtNext == mPlayer.getIconForDirection())
 			{
 				mPlayer.reset();
 				lives--;
 			}
-			mGameMap.setCharacterAtPosition(entity.getGhostIcon(), xPos, nextPos);
-			mPlayer.setYPos(nextPos);
+			entity.setYPos(nextPos);
 			break;
 		};
 	} // End MoveAI()
@@ -489,7 +508,7 @@ public:
 		case LEFT:
 			if (switchedSides == true)
 			{
-				Position.X = 17;
+				Position.X = SCREEN_OFFSET_MARGIN+1;
 				Position.Y = yPos;
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 				cout << mGameMap.getCharacterAtPosition(0, yPos);
@@ -531,7 +550,7 @@ public:
 				}
 				else
 				{
-					Position.X = xPos + 15;
+					Position.X = xPos + SCREEN_OFFSET_MARGIN-1;
 					Position.Y = yPos;
 					SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 					cout << mGameMap.getCharacterAtPosition(xPos - 1, yPos);
@@ -610,7 +629,7 @@ public:
 			Position.Y = mGhosts[i].getYPosition();
 			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), mGhosts[i].getGhostColor());
-			cout << mGameMap.getCharacterAtPosition(mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+			cout << mGhosts[i].getGhostIcon();
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 		}
 	} // END RenderAI
