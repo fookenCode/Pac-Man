@@ -74,6 +74,7 @@ public:
 		mGameMap.renderMap();
 		RenderPlayer(true);
 		RenderAI();
+		RenderStartText();
 	}
 
 	/****************************************************************************
@@ -438,6 +439,7 @@ public:
 			if (GetAsyncKeyState(VK_NUMPAD1) && playerCredits > 0)
 			{
 				playerCredits--;
+				ClearStartText();
 				gameState = RUNNING;
 			}
 			break;
@@ -673,6 +675,35 @@ public:
 		cout << "Credits " << playerCredits;
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 	} // END RenderCredits
+
+	/****************************************************************************
+	Function: RenderStartText
+	Parameter(s): N/A
+	Output: N/A
+	Comments: Renders help text to alert user to press '1' key to Start.
+	****************************************************************************/
+	void RenderStartText() {
+
+		COORD Position;
+		Position.X = 30;
+		Position.Y = 16;
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+		cout << "Press '1'";
+	} // END RenderStartText
+
+	/****************************************************************************
+	Function: ClearStartText
+	Parameter(s): N/A
+	Output: N/A
+	Comments: Clears the Start Help Text from the screen for gameplay.
+	****************************************************************************/
+	void ClearStartText() {
+		COORD Position;
+		Position.X = 30;
+		Position.Y = 16;
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+		cout << "         ";
+	} // END ClearStartText
 };
 
 #endif // _PAC_GAME_H_
