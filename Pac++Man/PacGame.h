@@ -335,7 +335,7 @@ public:
 		int xPos = mPlayer.getXPosition();
 		int yPos = mPlayer.getYPosition();
 		int nextPos = 0;
-		char charAtNext;
+		char charAtNext = ' ';
 		mGameMap.setCharacterAtPosition(' ', xPos, yPos);
 		switch (movementDirection)
 		{
@@ -349,17 +349,6 @@ public:
 			else
 			{
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-				if (charAtNext == 'ú')
-				{
-					mGameMap.decrementDotsRemaining();
-					score += 10;
-				}
-				else if (charAtNext == 'ù')
-				{
-					mGameMap.decrementDotsRemaining();
-					setAllGhostsVulnerable(true);
-					score += 50;
-				}
 				mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), nextPos, yPos);
 				mPlayer.setXPos(nextPos);
 			}
@@ -375,17 +364,6 @@ public:
 			else
 			{
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-				if (charAtNext == 'ú')
-				{
-					mGameMap.decrementDotsRemaining();
-					score += 10;
-				}
-				else if (charAtNext == 'ù')
-				{
-					mGameMap.decrementDotsRemaining();
-					setAllGhostsVulnerable(true);
-					score += 50;
-				}
 				mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), nextPos, yPos);
 				mPlayer.setXPos(nextPos);
 			}
@@ -393,37 +371,27 @@ public:
 		case UP:
 			nextPos = yPos - movementSpeed;
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-			if (charAtNext == 'ú')
-			{
-				mGameMap.decrementDotsRemaining();
-				score += 10;
-			}
-			else if (charAtNext == 'ù')
-			{
-				mGameMap.decrementDotsRemaining();
-				setAllGhostsVulnerable(true);
-				score += 50;
-			}
 			mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), xPos, nextPos);
 			mPlayer.setYPos(nextPos);
 			break;
 		case DOWN:
 			nextPos = yPos + movementSpeed;
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-			if (charAtNext == 'ú')
-			{
-				mGameMap.decrementDotsRemaining();
-				score += 10;
-			}
-			if (charAtNext == 'ù')
-			{
-				mGameMap.decrementDotsRemaining();
-				setAllGhostsVulnerable(true);
-				score += 50;
-			}
 			mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), xPos, nextPos);
 			mPlayer.setYPos(nextPos);
 			break;
+		}
+
+		if (charAtNext == 'ú')
+		{
+			mGameMap.decrementDotsRemaining();
+			score += 10;
+		}
+		else if (charAtNext == 'ù')
+		{
+			mGameMap.decrementDotsRemaining();
+			setAllGhostsVulnerable(true);
+			score += 50;
 		}
 	} // End MovePlayerCharacter()
 
