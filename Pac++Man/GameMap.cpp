@@ -173,7 +173,7 @@ Comments: Loops over entire Map by each character position to render the
 ****************************************************************************/
 void GameMap::renderMap() {
 	using namespace std;
-
+	totalDots = 0;
 	for (int i = 0; i < mapSizeY; ++i)
 	{
 		for (int j = 0; j < mapSizeX; ++j)

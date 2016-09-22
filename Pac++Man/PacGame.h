@@ -16,7 +16,7 @@ TODO: Make class Singleton
 class PacGame {
 public:
 	unsigned int lives, score;
-	int commandQueue, gameState, playerCredits, lastAISpawnTime, vulnerabilityTimer;
+	int commandQueue, gameState, playerCredits, lastAISpawnTime, vulnerabilityTimer, restartDelayTimer;
 	bool switchedSides, creditInserted;
 	
 	PlayerEntity mPlayer;
@@ -35,7 +35,7 @@ public:
 		switchedSides = false;
 
 		Reset();
-		RenderStartText();
+		RenderStatusText(PRESS_START_TEXT);
 	} // End Constructor
 
 	void SidesReset()    { switchedSides = false; }
@@ -97,9 +97,9 @@ public:
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 		// Render all components
 		mGameMap.renderMap();
-		RenderPlayer(true);
 		RenderAI(true);
-	}
+		RenderPlayer(true);
+	} // END Reset
 
 	/****************************************************************************
 	Function: RestartLevel
@@ -108,13 +108,34 @@ public:
 	Comments: Called when Player is caught by Ghosts or Level Completes
 	****************************************************************************/
 	void RestartLevel() {
+		gameState = READY;
 		if (lives > 0) {
 			lives--;
 		}
 		mGameMap.setCharacterAtPosition(' ', mPlayer.getXPosition(), mPlayer.getYPosition());
 		Reset();
-		lastAISpawnTime = GetTickCount();
-	}
+		RenderStatusText(READY_TEXT);
+		restartDelayTimer = GetTickCount();
+	} // END RestartLevel
+
+	/****************************************************************************
+	Function: PauseGame
+	Parameter(s): N/A
+	Output: N/A
+	Comments: Moves Game State between PAUSED and RUNNING states to allow for
+	          users to take a break.
+	****************************************************************************/
+	void PauseGame() {
+		if (gameState == RUNNING) {
+			gameState = PAUSED;
+			RenderStatusText(PAUSED_TEXT);
+		}
+		else if (gameState == PAUSED) {
+			gameState = RUNNING;
+			lastAISpawnTime = GetTickCount();
+			ClearStatusText();
+		}
+	} // END PauseGame
 
 	/****************************************************************************
 	Function: Update
@@ -136,7 +157,7 @@ public:
 				setAllGhostsVulnerable(false);
 			}
 		}
-	}
+	} // END Update
 
 	/****************************************************************************
 	Function: CanMoveInSpecifiedDirection
@@ -240,7 +261,6 @@ public:
 			if (nextPos <1 && yPos == 11)
 			{
 				returnCase = true;
-				switchedSides = true;
 			}
 			else
 			{
@@ -256,7 +276,6 @@ public:
 			if (nextPos > DEFAULT_MAP_EDGE && yPos == 11)
 			{
 				returnCase = true;
-				switchedSides = true;
 			}
 			else
 			{
@@ -293,7 +312,7 @@ public:
 			break;
 		}
 		return returnCase;
-	}
+	} // END GhostCanMoveInSpecifiedDirection
 
 
 	/****************************************************************************
@@ -377,11 +396,11 @@ public:
 			else
 			{
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
+				entity.setXPos(nextPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
 					RestartLevel();
 				}
-				entity.setXPos(nextPos);
 			}
 
 			break;
@@ -394,30 +413,30 @@ public:
 			else
 			{
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
+				entity.setXPos(nextPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
 					RestartLevel();
 				}
-				entity.setXPos(nextPos);
 			}
 			break;
 		case UP:
 			nextPos = yPos - movementSpeed;
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
+			entity.setYPos(nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
 				RestartLevel();
 			}
-			entity.setYPos(nextPos);
 			break;
 		case DOWN:
 			nextPos = yPos + movementSpeed;
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
+			entity.setYPos(nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
 				RestartLevel();
 			}
-			entity.setYPos(nextPos);
 			break;
 		};
 	} // End MoveAI()
@@ -604,10 +623,10 @@ public:
 			if (GetAsyncKeyState(VK_NUMPAD1)||GetAsyncKeyState(VK_1) && playerCredits > 0)
 			{
 				playerCredits--;
-				ClearStartText();
-				lastAISpawnTime = GetTickCount();
-				vulnerabilityTimer = 0;
-				gameState = RUNNING;
+				ClearStatusText();
+				RenderStatusText(READY_TEXT);
+				restartDelayTimer = GetTickCount();
+				gameState = READY;
 			}
 			break;
 		}
@@ -629,12 +648,31 @@ public:
 			{
 				UpdatePlayerDirection(DOWN);
 			}
+			if (GetAsyncKeyState(VK_SPACE))
+			{
+				PauseGame();
+			}
 			if (mGameMap.getTotalDotsRemaining() == 0)
 			{
 				gameState = WINNING;
 			}
 			break;
 		}
+		case READY:
+		{
+			if (GetTickCount() - restartDelayTimer > 3000) {
+				gameState = RUNNING;
+				lastAISpawnTime = GetTickCount();
+				ClearStatusText();
+				vulnerabilityTimer = 0;
+			}
+		}
+		case PAUSED:
+			if (GetAsyncKeyState(VK_SPACE))
+			{
+				PauseGame();
+			}
+			break;
 		case WINNING:
 		default:
 			break;
@@ -847,33 +885,42 @@ public:
 	} // END RenderCredits
 
 	/****************************************************************************
-	Function: RenderStartText
-	Parameter(s): N/A
+	Function: RenderStatusText
+	Parameter(s): const char * - String to display in the line below the Ghost
+	                             Spawn box.
 	Output: N/A
-	Comments: Renders help text to alert user to press '1' key to Start.
+	Comments: Renders string to screen below Ghost Spawn box.
 	****************************************************************************/
-	void RenderStartText() {
+	void RenderStatusText(const char *stringToDisplay) {
 
 		COORD Position;
-		Position.X = 30;
+		Position.X = SCREEN_OFFSET_MARGIN+11;
 		Position.Y = 16;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << PRESS_START_TEXT;
-	} // END RenderStartText
+		// Attempt to pad the string display to center the text 
+		// under the Ghost Spawn box
+		int length = strlen(stringToDisplay);
+		length = (15 - length) / 2;
+		for (int i = 0; i < length; ++i) {
+			cout << ' ';
+		}
+		cout << stringToDisplay;
+	} // END RenderStatusText
 
 	/****************************************************************************
-	Function: ClearStartText
+	Function: ClearStatusText
 	Parameter(s): N/A
 	Output: N/A
-	Comments: Clears the Start Help Text from the screen for gameplay.
+	Comments: Clears the Text from the screen for gameplay at the line below
+	          the Ghost Spawn box
 	****************************************************************************/
-	void ClearStartText() {
+	void ClearStatusText() {
 		COORD Position;
 		Position.X = 30;
 		Position.Y = 16;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 		cout << CLEAR_PRESS_START;
-	} // END ClearStartText
+	} // END ClearStatusText
 };
 
 #endif // _PAC_GAME_H_
