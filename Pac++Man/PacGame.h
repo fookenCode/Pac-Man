@@ -16,7 +16,7 @@ TODO: Make class Singleton
 class PacGame {
 public:
 	unsigned int lives, score;
-	int commandQueue, gameState, playerCredits;
+	int commandQueue, gameState, playerCredits, lastAISpawnTime, vulnerabilityTimer;
 	bool switchedSides, creditInserted;
 	
 	PlayerEntity mPlayer;
@@ -35,13 +35,32 @@ public:
 		switchedSides = false;
 
 		Reset();
+		RenderStartText();
 	} // End Constructor
 
 	void SidesReset()    { switchedSides = false; }
 	bool IsGameRunning() { return !((gameState == WINNING || gameState == RUNNING) && IsGameOver()); }
 	bool IsGameOver()    { return (mGameMap.getTotalDotsRemaining() <= 0); }
+	bool IsGhostAtPosition(int xPos, int yPos) {
+		bool returnVal = false;
+		for (int i = 0; i < MAX_ENEMIES; ++i) {
+			if (!mGhosts[i].isActive()) {
+				continue;
+			}
+			if (mGhosts[i].getXPosition() == xPos && mGhosts[i].getYPosition() == yPos) {
+				return true;
+			}
+		}
+		return returnVal;
+	}
 	int  getGameState()  { return gameState; }
 
+	/****************************************************************************
+	Function: Reset
+	Parameter(s): N/A
+	Output: N/A
+	Comments: Reset Game States and re-render all objects to screen
+	****************************************************************************/
 	void Reset()
 	{
 		// CommandQueue used to create free-flowing and fast response to input by 
@@ -49,6 +68,7 @@ public:
 		commandQueue = -1;
 		// Controls the state of whether the player has accessed the tunnel to either side of Map
 		switchedSides = false;
+		vulnerabilityTimer = 0;
 
 		// Initialize Player object and status
 		mPlayer.reset();
@@ -67,16 +87,33 @@ public:
 				mGhosts[i].setMovementSpeed(1);
 			}
 			else {
-				mGhosts[i].setXPos(DEFAULT_AI_X_POSITION + i);
+				mGhosts[i].setXPos(DEFAULT_AI_X_POSITION + i*2);
 				mGhosts[i].setYPos(DEFAULT_AI_Y_POSITION);
 			}
 		}
-		
+		COORD Position;
+		Position.X = 0;
+		Position.Y = 0;
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 		// Render all components
 		mGameMap.renderMap();
 		RenderPlayer(true);
-		RenderAI();
-		RenderStartText();
+		RenderAI(true);
+	}
+
+	/****************************************************************************
+	Function: RestartLevel
+	Parameter(s): N/A
+	Output: N/A
+	Comments: Called when Player is caught by Ghosts or Level Completes
+	****************************************************************************/
+	void RestartLevel() {
+		if (lives > 0) {
+			lives--;
+		}
+		mGameMap.setCharacterAtPosition(' ', mPlayer.getXPosition(), mPlayer.getYPosition());
+		Reset();
+		lastAISpawnTime = GetTickCount();
 	}
 
 	/****************************************************************************
@@ -93,6 +130,11 @@ public:
 
 			// Move AI
 			UpdateAICharacters();
+
+			if (vulnerabilityTimer > 0 && GetTickCount() - vulnerabilityTimer > VULNERABILITY_TIME_LIMIT) {
+				// Reset all of the AI Characters Vulnerability
+				setAllGhostsVulnerable(false);
+			}
 		}
 	}
 
@@ -146,13 +188,15 @@ public:
 			}
 			break;
 		case UP:
-			spaceToMove = mGameMap.getCharacterAtPosition(xPos, yPos - movementSpeed);
+			nextPos = yPos - movementSpeed;
+			spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
 			if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
 			{
 				returnCase = true;
 			}
 			break;
 		case DOWN:
+			nextPos = yPos + movementSpeed;
 			// Protect from Entity entering the Home Base of the Ghosts
 			if (((xPos >= 15 && xPos <= 18) && yPos == 11))
 			{
@@ -160,7 +204,7 @@ public:
 			}
 			else
 			{
-				spaceToMove = mGameMap.getCharacterAtPosition(xPos, yPos + movementSpeed);
+				spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
 				if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
 				{
 					returnCase = true;
@@ -172,30 +216,122 @@ public:
 	} // END CanMoveInSpecifiedDirection
 
 	/****************************************************************************
+	Function: GhostCanMoveInSpecifiedDirection
+	Parameter(s): int - Enum value (See @Constants.h) for valid Directions input.
+	int - X coordinate of Position to check
+	int - Y coordinate of Position to check
+	int - Movement speed (default = 1)
+	Output: bool - True if move is allowed, False if not.
+	Comments: Universal check for all Entities on the Map for
+	whether next position is valid move.
+	****************************************************************************/
+	bool GhostCanMoveInSpecifiedDirection(GhostEntity &ghost, int testDirection = MAX_DIRECTION) {
+		bool returnCase = false;
+		int nextPos = 0;
+		int xPos = ghost.getXPosition();
+		int yPos = ghost.getYPosition();
+		int movementSpeed = ghost.getMovementSpeed();
+		char playerIcon = mPlayer.getIconForDirection();
+		char spaceToMove;
+		switch ((testDirection==MAX_DIRECTION)?ghost.getMovementDirection():testDirection)
+		{
+		case LEFT:
+			nextPos = xPos - movementSpeed;
+			if (nextPos <1 && yPos == 11)
+			{
+				returnCase = true;
+				switchedSides = true;
+			}
+			else
+			{
+				spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
+				if (!IsGhostAtPosition(nextPos, yPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
+				{
+					returnCase = true;
+				}
+			}
+			break;
+		case RIGHT:
+			nextPos = xPos + movementSpeed;
+			if (nextPos > DEFAULT_MAP_EDGE && yPos == 11)
+			{
+				returnCase = true;
+				switchedSides = true;
+			}
+			else
+			{
+				spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
+				if (!IsGhostAtPosition(nextPos, yPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
+				{
+					returnCase = true;
+				}
+			}
+			break;
+		case UP:
+			nextPos = yPos - movementSpeed;
+			spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
+			if (!IsGhostAtPosition(xPos, nextPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
+			{
+				returnCase = true;
+			}
+			break;
+		case DOWN:
+			nextPos = yPos + movementSpeed;
+			// Protect from Entity entering the Home Base of the Ghosts
+			if (((xPos >= 15 && xPos <= 18) && yPos == 11))
+			{
+				returnCase = false;
+			}
+			else
+			{
+				spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
+				if (!IsGhostAtPosition(xPos, nextPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
+				{
+					returnCase = true;
+				}
+			}
+			break;
+		}
+		return returnCase;
+	}
+
+
+	/****************************************************************************
 	Function: UpdateAICharacters
 	Parameter(s): N/A
 	Output: N/A
 	Comments: Update all Active AI currently on the Map
 	****************************************************************************/
 	void UpdateAICharacters() {
+		bool canMoveCurr, canMoveNext = false;
+		int nextMoveDir = MAX_DIRECTION;
 		for (int i =0; i < MAX_ENEMIES; ++i) {
 			if (!mGhosts[i].isActive()) {
+				if (GetTickCount() - lastAISpawnTime > GHOST_SPAWN_TIMER) {
+					mGhosts[i].setActive(true);
+					ClearInitialGhostPosition(mGhosts[i]);
+					mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
+					mGhosts[i].setYPos(AI_BOX_ACTIVE_Y_POSITION);
+					mGhosts[i].setMovementDirection(LEFT);
+					mGhosts[i].setMovementSpeed(1);
+					lastAISpawnTime = GetTickCount();
+				}
 				continue;
 			}
 
-			bool canMoveCurr, canMoveNext = false;
-			int nextMoveDir = MAX_DIRECTION;
-			canMoveCurr = CanMoveInSpecifiedDirection(mGhosts[i].getMovementDirection(), mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+			canMoveNext = false;
+			nextMoveDir = MAX_DIRECTION;
+			canMoveCurr = GhostCanMoveInSpecifiedDirection(mGhosts[i]);
 			switch (mGhosts[i].getMovementDirection()) {
 			case LEFT:
 			case RIGHT:
 				nextMoveDir = (mGhosts[i].getYPosition() < mPlayer.getYPosition()) ? DOWN : UP;
-				canMoveNext = CanMoveInSpecifiedDirection(nextMoveDir, mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+				canMoveNext = GhostCanMoveInSpecifiedDirection(mGhosts[i], nextMoveDir);
 				break;
 			case UP:
 			case DOWN:
 				nextMoveDir = (mGhosts[i].getXPosition() < mPlayer.getXPosition()) ? RIGHT : LEFT;
-				canMoveNext = CanMoveInSpecifiedDirection(nextMoveDir, mGhosts[i].getXPosition(), mGhosts[i].getYPosition());
+				canMoveNext = GhostCanMoveInSpecifiedDirection(mGhosts[i], nextMoveDir);
 				break;
 			default:
 				break;
@@ -229,7 +365,6 @@ public:
 		Position.Y = yPos;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 		cout << mGameMap.getCharacterAtPosition(xPos, yPos);
-		//SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 
 		switch (movementDirection)
 		{
@@ -244,8 +379,7 @@ public:
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
-					mPlayer.reset();
-					lives--;
+					RestartLevel();
 				}
 				entity.setXPos(nextPos);
 			}
@@ -262,8 +396,7 @@ public:
 				charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
-					mPlayer.reset();
-					lives--;
+					RestartLevel();
 				}
 				entity.setXPos(nextPos);
 			}
@@ -273,8 +406,7 @@ public:
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
-				mPlayer.reset();
-				lives--;
+				RestartLevel();
 			}
 			entity.setYPos(nextPos);
 			break;
@@ -283,8 +415,7 @@ public:
 			charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
-				mPlayer.reset();
-				lives--;
+				RestartLevel();
 			}
 			entity.setYPos(nextPos);
 			break;
@@ -411,6 +542,7 @@ public:
 		{
 			mGameMap.decrementDotsRemaining();
 			setAllGhostsVulnerable(true);
+			vulnerabilityTimer = GetTickCount();
 			score += 50;
 		}
 	} // End MovePlayerCharacter()
@@ -427,10 +559,24 @@ public:
 			if (!mGhosts[i].isActive()) {
 				continue;
 			}
-
-			mGhosts[i].setVulnerable(true);
+			mGhosts[i].setVulnerable(status);
 		}
 	} // END setAllGhostsVulnerable
+
+	/****************************************************************************
+	Function: ClearInitialGhostPosition
+	Parameter(s): GhostEntity & - Reference to entity that is becoming Active,
+	                              this function clears the Box Spawn Position
+	Output: N/A
+	Comments: Clears the Box Spawn position of the GhostEntity.
+	****************************************************************************/
+	void ClearInitialGhostPosition(GhostEntity &entity) {
+		COORD Position;
+		Position.X = entity.getXPosition() + SCREEN_OFFSET_MARGIN;
+		Position.Y = entity.getYPosition();
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+		cout << mGameMap.getCharacterAtPosition(Position.X, Position.Y);
+	} // END ClearInitialGhostPosition
 
 	/****************************************************************************
 	Function: GatherGamePlayInput
@@ -455,10 +601,12 @@ public:
 				creditInserted = false;
 			}
 
-			if (GetAsyncKeyState(VK_NUMPAD1) && playerCredits > 0)
+			if (GetAsyncKeyState(VK_NUMPAD1)||GetAsyncKeyState(VK_1) && playerCredits > 0)
 			{
 				playerCredits--;
 				ClearStartText();
+				lastAISpawnTime = GetTickCount();
+				vulnerabilityTimer = 0;
 				gameState = RUNNING;
 			}
 			break;
@@ -533,7 +681,7 @@ public:
 		case RIGHT:
 			if (switchedSides == true)
 			{
-				Position.X = (DEFAULT_MAP_EDGE) +SCREEN_OFFSET_MARGIN;
+				Position.X = DEFAULT_MAP_EDGE + SCREEN_OFFSET_MARGIN;
 				Position.Y = yPos;
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 				cout << mGameMap.getCharacterAtPosition(DEFAULT_MAP_EDGE, yPos);
@@ -618,11 +766,11 @@ public:
 	Output: N/A
 	Comments: Renders the Active Ghost AI on-screen at their present positions.
 	****************************************************************************/
-	void RenderAI()
+	void RenderAI(bool forceRenderAll = false)
 	{
 		COORD Position;
 		for (int i = 0; i < MAX_ENEMIES; ++i) {
-			if (!mGhosts[i].isActive()) {
+			if (!mGhosts[i].isActive() && !forceRenderAll) {
 				continue;
 			}
 			Position.X = mGhosts[i].getXPosition() + SCREEN_OFFSET_MARGIN;
@@ -646,7 +794,7 @@ public:
 		Position.X = mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN + 8;
 		Position.Y = 2;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << "Score";
+		cout << SCORE_NAME_TEXT;
 		Position.X = mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN + 10;
 		Position.Y = 3;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
@@ -665,7 +813,7 @@ public:
 		Position.X = mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN + 8;
 		Position.Y = 6;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << "Lives";
+		cout << LIVES_NAME_TEXT;
 		Position.X = mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN + 9;
 		Position.Y = 7;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
@@ -673,6 +821,9 @@ public:
 		for (int i = 0; i < lives; ++i)
 		{
 			cout << mPlayer.getIconForDirection(RIGHT) << ' ';
+		}
+		for (int i = lives; i < MAX_VISIBLE_LIVES; ++i) {
+			cout << ' ';
 		}
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 	} // END RenderLives
@@ -691,7 +842,7 @@ public:
 		Position.Y = mGameMap.getMapHeight();
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << "Credits " << playerCredits;
+		cout << CREDITS_NAME_TEXT << playerCredits;
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 	} // END RenderCredits
 
@@ -707,7 +858,7 @@ public:
 		Position.X = 30;
 		Position.Y = 16;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << "Press '1'";
+		cout << PRESS_START_TEXT;
 	} // END RenderStartText
 
 	/****************************************************************************
@@ -721,7 +872,7 @@ public:
 		Position.X = 30;
 		Position.Y = 16;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-		cout << "         ";
+		cout << CLEAR_PRESS_START;
 	} // END ClearStartText
 };
 

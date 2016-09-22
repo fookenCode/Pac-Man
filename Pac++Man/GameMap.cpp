@@ -190,10 +190,13 @@ void GameMap::renderMap() {
 
 			if (isWallCharacter(j, i, BOTH) || mapStrings[i][j] == 'a')
 			{
-				if (mapStrings[i][j] == 'a')
-					mapStrings[i][j] = ' ';
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 26);
-				cout << mapStrings[i][j];
+				if (mapStrings[i][j] == 'a') {
+					cout << ' ';
+				}
+				else {
+					cout << mapStrings[i][j];
+				}
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 			}
 			else

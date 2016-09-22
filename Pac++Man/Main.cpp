@@ -16,6 +16,7 @@ int main(int args, char *argv)
 	SMALL_RECT windowDimensions = { 0,0,79,30 };
 	SetConsoleScreenBufferSize(hOutput, bufferSize);
 	SetConsoleWindowInfo(hOutput, TRUE, &windowDimensions);
+	SetConsoleTitleA(TITLE_WINDOW_TEXT);
 	// turn the cursor off
 	info.bVisible = FALSE;
 	info.dwSize = 1;
@@ -44,7 +45,7 @@ int main(int args, char *argv)
 	Position.X = 30;
 	Position.Y = 16;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-	cout << "Game Over";
+	cout << GAMEOVER_TEXT;
 	Position.X = 21;
 	Position.Y = 30;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
