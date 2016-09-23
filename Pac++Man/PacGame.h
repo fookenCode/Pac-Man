@@ -7,7 +7,6 @@ TODO: Make class Singleton
 #define _PAC_GAME_H_
 
 #include <Windows.h>
-#include <random>
 #include "Constants.h"
 #include "GameMap.h"
 #include "GhostEntity.h"
@@ -16,7 +15,7 @@ TODO: Make class Singleton
 class PacGame {
 public:
 	unsigned int lives, score;
-	int commandQueue, gameState, playerCredits, lastAISpawnTime, vulnerabilityTimer, restartDelayTimer;
+	int commandQueue, gameState, playerCredits, lastAISpawnTime, vulnerabilityTimer, restartDelayTimer, ghostMultiplier;
 	bool switchedSides, creditInserted;
 	
 	PlayerEntity mPlayer;
@@ -29,6 +28,7 @@ public:
 		gameState = ATTRACT;
 		lives = 3;
 		score = 0;
+		ghostMultiplier = 1;
 		playerCredits = 99;
 		commandQueue = -1;
 		creditInserted = false;
@@ -68,6 +68,7 @@ public:
 		commandQueue = -1;
 		// Controls the state of whether the player has accessed the tunnel to either side of Map
 		switchedSides = false;
+		ghostMultiplier = 1;
 		vulnerabilityTimer = 0;
 
 		// Initialize Player object and status
@@ -314,6 +315,24 @@ public:
 		return returnCase;
 	} // END GhostCanMoveInSpecifiedDirection
 
+	/****************************************************************************
+	Function: TriggerGhostEaten
+	Parameter(s): GhostEntity & - Reference to the Ghost that was just caught
+	                              by player.
+	Output: N/A
+	Comments: Resets the GhostEntity back to Spawn Box position with Respawn Timer.
+	****************************************************************************/
+	void TriggerGhostEaten(GhostEntity &entity) {
+		entity.setActive(false);
+		entity.setVulnerable(false);
+		score += GHOST_SCORE_AMOUNT*ghostMultiplier;
+		entity.setXPos(DEFAULT_AI_X_POSITION + 2*(entity.getGhostColor() % GREEN));
+		entity.setYPos(DEFAULT_AI_Y_POSITION);
+		entity.setMovementDirection(MAX_DIRECTION);
+		entity.setMovementSpeed(0);
+		entity.setRespawnTimer(GetTickCount());
+		RenderSingleAI(entity);
+	} // END TriggerGhostEaten
 
 	/****************************************************************************
 	Function: UpdateAICharacters
@@ -326,7 +345,8 @@ public:
 		int nextMoveDir = MAX_DIRECTION;
 		for (int i =0; i < MAX_ENEMIES; ++i) {
 			if (!mGhosts[i].isActive()) {
-				if (GetTickCount() - lastAISpawnTime > GHOST_SPAWN_TIMER) {
+				int respawnTimer = mGhosts[i].getRespawnTimer();
+				if (GetTickCount() - lastAISpawnTime > GHOST_SPAWN_TIMER && (!respawnTimer || GetTickCount() - respawnTimer > GHOST_SPAWN_TIMER*4)) {
 					mGhosts[i].setActive(true);
 					ClearInitialGhostPosition(mGhosts[i]);
 					mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
@@ -360,6 +380,11 @@ public:
 			}
 			if (canMoveNext || canMoveCurr) {
 				MoveAI(mGhosts[i]);
+				// Exit this function early to ensure that no further AI movements
+				// are performed if the GameState has changed due to collision with player
+				if (gameState == READY) {
+					return;
+				}
 			}
 		} // END For(i<MAX_ENEMIES)
 	} // END UpdateAICharacters
@@ -399,7 +424,12 @@ public:
 				entity.setXPos(nextPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
-					RestartLevel();
+					if (entity.isVulnerable()) {
+						TriggerGhostEaten(entity);
+					}
+					else {
+						RestartLevel();
+					}
 				}
 			}
 
@@ -416,7 +446,12 @@ public:
 				entity.setXPos(nextPos);
 				if (charAtNext == mPlayer.getIconForDirection())
 				{
-					RestartLevel();
+					if (entity.isVulnerable()) {
+						TriggerGhostEaten(entity);
+					}
+					else {
+						RestartLevel();
+					}
 				}
 			}
 			break;
@@ -426,7 +461,12 @@ public:
 			entity.setYPos(nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
-				RestartLevel();
+				if (entity.isVulnerable()) {
+					TriggerGhostEaten(entity);
+				}
+				else {
+					RestartLevel();
+				}
 			}
 			break;
 		case DOWN:
@@ -435,7 +475,12 @@ public:
 			entity.setYPos(nextPos);
 			if (charAtNext == mPlayer.getIconForDirection())
 			{
-				RestartLevel();
+				if (entity.isVulnerable()) {
+					TriggerGhostEaten(entity);
+				}
+				else {
+					RestartLevel();
+				}
 			}
 			break;
 		};
@@ -555,14 +600,14 @@ public:
 		if (charAtNext == 'ú')
 		{
 			mGameMap.decrementDotsRemaining();
-			score += 10;
+			score += SINGLE_DOT_SCORE_AMOUNT;
 		}
 		else if (charAtNext == 'ù')
 		{
 			mGameMap.decrementDotsRemaining();
 			setAllGhostsVulnerable(true);
 			vulnerabilityTimer = GetTickCount();
-			score += 50;
+			score += POWER_UP_SCORE_AMOUNT;
 		}
 	} // End MovePlayerCharacter()
 
@@ -821,6 +866,25 @@ public:
 	} // END RenderAI
 
 	/****************************************************************************
+	Function: RenderSingleAI
+	Parameter(s): GhostEntity & - Reference to the Ghost to manually render.
+	Output: N/A
+	Comments: Renders the provided Ghost AI on-screen.
+	****************************************************************************/
+	void RenderSingleAI(GhostEntity &entity)
+	{
+		COORD Position;
+		Position.X = entity.getXPosition() + SCREEN_OFFSET_MARGIN;
+		Position.Y = entity.getYPosition();
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), entity.getGhostColor());
+		cout << entity.getGhostIcon();
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+	} // END RenderSingleAI
+
+
+
+	/****************************************************************************
 	Function: RenderScore
 	Parameter(s): N/A
 	Output: N/A
@@ -916,7 +980,7 @@ public:
 	****************************************************************************/
 	void ClearStatusText() {
 		COORD Position;
-		Position.X = 30;
+		Position.X = SCREEN_OFFSET_MARGIN + 11;
 		Position.Y = 16;
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
 		cout << CLEAR_PRESS_START;

@@ -10,7 +10,7 @@ Author: fookenCode
 class GhostEntity : public Entity {
 private:
 	enum GHOST_STATE {INVULNERABLE=0,VULNERABLE};
-	int mVulnerableStatus,mColor;
+	int mVulnerableStatus,mColor, mRespawnTimer;
 	char mGhostIcon;
 	bool mActive;
 
@@ -29,6 +29,9 @@ public:
 
 	void setVulnerable(bool status) { (status) ? mVulnerableStatus = VULNERABLE : mVulnerableStatus = INVULNERABLE; }
 	bool isVulnerable() { return (mVulnerableStatus == VULNERABLE); }
+
+	void setRespawnTimer(int timer) { this->mRespawnTimer = timer; }
+	int getRespawnTimer() { return this->mRespawnTimer; }
 
 	virtual void render();
 	virtual void reset();

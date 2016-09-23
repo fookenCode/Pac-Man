@@ -16,6 +16,7 @@ Comments: Used to reset the status of the GhostEntity to base.
 ****************************************************************************/
 void GhostEntity::reset() {
 	setMovementSpeed(0);
+	setRespawnTimer(0);
 	setMovementDirection(MAX_DIRECTION);
 	mActive = false;
 	mVulnerableStatus = INVULNERABLE;
