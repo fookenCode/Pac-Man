@@ -5,7 +5,7 @@ Author: fookenCode
 #include "GhostEntity.h"
 
 GhostEntity::GhostEntity() {
-	mGhostIcon = 0x94;
+    mGhostIcon = 0x94;
 }
 
 /****************************************************************************
@@ -14,12 +14,12 @@ Parameter(s): N/A
 Output: N/A
 Comments: Used to reset the status of the GhostEntity to base.
 ****************************************************************************/
-void GhostEntity::reset() {
-	setMovementSpeed(0);
-	setRespawnTimer(0);
-	setMovementDirection(MAX_DIRECTION);
-	mActive = false;
-	mVulnerableStatus = INVULNERABLE;
+void GhostEntity::Reset() {
+    setMovementSpeed(0);
+    setRespawnTimer(0);
+    setMovementDirection(MAX_DIRECTION);
+    mActive = false;
+    mVulnerableStatus = INVULNERABLE;
 }
 
 /****************************************************************************
@@ -28,6 +28,6 @@ Parameter(s): N/A
 Output: N/A
 Comments: Used internally to create the Character Map for game board.
 ****************************************************************************/
-void GhostEntity::render() {
-	// TODO
+void GhostEntity::Render() {
+    // TODO
 }

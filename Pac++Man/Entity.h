@@ -7,42 +7,20 @@ Author: fookenCode
 #include "Constants.h"
 
 class Entity {
-private:
-	int movementSpeed, movementDirection, xPos, yPos;
+protected:
+    int xPos, yPos;
 public:
-	Entity() { }
-	virtual ~Entity() { }
-	int getMovementSpeed() { return movementSpeed; }
-	int getMovementDirection() { return movementDirection; }
-	int getXPosition() { return xPos; }
-	int getYPosition() { return yPos; }
+    Entity() { }
+    virtual ~Entity() { }
 
-	void setMovementSpeed(int newSpeed) { movementSpeed = newSpeed; }
-	void setMovementDirection(int newDirection) { movementDirection = newDirection; }
-	void setXPos(int newXPos) { xPos = newXPos; }
-	void setYPos(int newYPos) { yPos = newYPos; }
-	void updatePos()
-	{
-		switch (movementDirection)
-		{
-		case LEFT:
-			xPos -= movementSpeed;
-			break;
-		case RIGHT:
-			xPos += movementSpeed;
-			break;
-		case UP:
-			yPos -= movementSpeed;
-			break;
-		case DOWN:
-			yPos += movementSpeed;
-			break;
-		default:
-			break;
-		}
-	}
+    int getXPosition() { return xPos; }
+    int getYPosition() { return yPos; }
 
-	virtual void render() = 0;
-	virtual void reset() = 0;
+    void setXPos(int newXPos) { xPos = newXPos; }
+    void setYPos(int newYPos) { yPos = newYPos; }
+    void setPosition(int newXPos, int newYPos) { xPos = newXPos; yPos = newYPos; }
+
+    virtual void Render() = 0;
+    virtual void Reset() = 0;
 };
 #endif // _ENTITY_H_

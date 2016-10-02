@@ -9,23 +9,32 @@ Author: fookenCode
 
 class GameMap {
 private:
-	unsigned int mapSizeX, mapSizeY, currentLevel;
-	int totalDots;
-	char mapStrings[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH], unalteredMapStrings[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH];
+    int mapSizeX, mapSizeY, currentLevel;
+    int totalDots;
+    char **mapStrings, **unalteredMapStrings;
 
 public:
-	GameMap();
-	virtual ~GameMap() { }
+    GameMap();
+    virtual ~GameMap();
+    bool allocateMapAssetMemory();
+    void releaseMapAssetMemory();
+    void initializeMapObject();
+    bool loadMap();
+    void renderMap();
+    
+    int getCurrentLevel() { return currentLevel; }
+    void setCurrentLevel(int newLevel) { currentLevel = newLevel; }
 
-	void initializeMapObject();
-	void renderMap();
-	int getTotalDotsRemaining() { return this->totalDots; }
-	void decrementDotsRemaining() { this->totalDots--; }
-	bool isWallCharacter(int xPos, int yPos, int wallGroupToTest);
+    int getTotalDotsRemaining() { return this->totalDots; }
+    inline void decrementDotsRemaining() { this->totalDots--; }
+    inline void incrementDotsRemaining() { this->totalDots++; }
+    
+    bool isWallCharacter(int xPos, int yPos, int wallGroupToTest);
 
-	void setCharacterAtPosition(char toEnter, int xPos, int yPos);
-	char getCharacterAtPosition(int xPos, int yPos);
-	int getMapWidth() { return mapSizeX; }
-	int getMapHeight() { return mapSizeY; }
+    void setCharacterAtPosition(char toEnter, int xPos, int yPos);
+    char getCharacterAtPosition(int xPos, int yPos);
+    int getMapWidth() { return mapSizeX; }
+    int getMapHeight() { return mapSizeY; }
+    inline int getMapEdge() { return mapSizeX - 2; }
 };
 #endif // _GAME_MAP_H_
