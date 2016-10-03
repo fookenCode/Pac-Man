@@ -11,10 +11,10 @@ public:
     virtual ~CreditsBoard();
 
     int getCreditTotal() { return creditTotal; }
-    void addCredits(int creditsToAdd) { creditTotal += creditsToAdd; }
-    void setCredits(int newCreditTotal) { creditTotal = newCreditTotal; }
-    inline void decCredits() { creditTotal--; }
-    inline void incCredits() { creditTotal++; }
+    void addCredits(int creditsToAdd) { creditTotal += creditsToAdd; setInvalidated(true); }
+    void setCredits(int newCreditTotal) { creditTotal = newCreditTotal; setInvalidated(true); }
+    inline void decCredits() { creditTotal--; setInvalidated(true); }
+    inline void incCredits() { creditTotal++; setInvalidated(true); }
     virtual void Render();
     virtual void Reset();
 };

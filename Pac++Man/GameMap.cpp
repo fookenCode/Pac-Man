@@ -9,6 +9,7 @@ Author: fookenCode
 #include "Constants.h"
 
 GameMap::GameMap() : mapSizeY(0), mapSizeX(0), totalDots(0), currentLevel(1), mapStrings(nullptr), unalteredMapStrings(nullptr){
+    renderQueue.clear();
     loadMap();
     initializeMapObject();
 }
@@ -198,32 +199,77 @@ bool GameMap::isWallCharacter(int xPos, int yPos, int wallGroupToTest)
 {
     char toCompare = mapStrings[yPos][xPos];
 
+    // Wall characters ordered by frequency in the map for optimal tests
     switch (wallGroupToTest)
     {
     case INNER:
-        if (toCompare == 'Ú' || toCompare == 'Ä' || toCompare == '¿' ||
-            toCompare == '³' || toCompare == 'À' || toCompare == 'Ù')
+        if (toCompare == 'Ä' || toCompare == '³' || toCompare == 'Ú'  ||
+            toCompare == 'Ù' || toCompare == 'À' || toCompare == '¿' )
         {
             return true;
         }
         break;
     case OUTER:
-        if (toCompare == 'É' || toCompare == 'Í' || toCompare == '»' ||
-            toCompare == 'º' || toCompare == 'È' || toCompare == '¼')
+        if (toCompare == 'Í' || toCompare == 'º' || toCompare == 'È' ||
+            toCompare == 'É' || toCompare == '»' || toCompare == '¼')
         {
             return true;
         }
         break;
     case BOTH:
-        if (toCompare == 'É' || toCompare == 'Í' || toCompare == '»' ||
-            toCompare == 'º' || toCompare == 'È' || toCompare == '¼' ||
-            toCompare == 'Ú' || toCompare == 'Ä' || toCompare == '¿' ||
-            toCompare == '³' || toCompare == 'À' || toCompare == 'Ù')
+        if (toCompare == 'Ä' || toCompare == 'Í' || toCompare == '³' ||
+            toCompare == 'º' || toCompare == 'Ú' || toCompare == 'Ù' ||
+            toCompare == 'À' || toCompare == '¿' || toCompare == 'È' ||
+            toCompare == 'É' || toCompare == '»' || toCompare == '¼')
         {
             return true;
         }
         break;
 
+    }
+    return false;
+}
+
+/****************************************************************************
+Function: getAvailableDirectionsForPosition
+Parameter(s): int - X position to check in Map.
+              int - Y position to check in Map.
+Output: Unsigned - Bits representing the available directions.
+Comments: Tests all 4 directions from the given position against the
+MapStrings and returns a bitmask of the valid directions.
+****************************************************************************/
+unsigned GameMap::getAvailableDirectionsForPosition(int xPos, int yPos) {
+    unsigned returnValue;
+    // Left
+    if (checkForEmptySpace(xPos - 1, yPos)) {
+        returnValue &= LEFT_BIT;
+    }
+    if (checkForEmptySpace(xPos + 1, yPos)) {
+        returnValue &= RIGHT_BIT;
+    }
+    if (checkForEmptySpace(xPos, yPos + 1)) {
+        returnValue &= DOWN_BIT;
+    }
+    if (checkForEmptySpace(xPos, yPos - 1)) {
+        returnValue &= UP_BIT;
+    }
+
+    return returnValue;
+}
+
+/****************************************************************************
+Function: checkForEmptySpace
+Parameter(s): int - X position to check in Map.
+int - Y position to check in Map.
+Output: Bool - Whether the space is a Dot, PowerDot, or Space.
+Comments: Tests position in the MapStrings for non-wall character.
+****************************************************************************/
+bool GameMap::checkForEmptySpace(int xPos, int yPos) {
+    if (xPos >= 0 && xPos <= mapSizeX && yPos >= 0 && yPos < mapSizeY) {
+        char toTest = mapStrings[yPos][xPos];
+        if (toTest == NORML_PELLET_CHARACTER || toTest == ' ' || toTest == POWER_PELLET_CHARACTER) {
+            return true;
+        }
     }
     return false;
 }
@@ -236,36 +282,63 @@ Comments: Loops over entire Map by each character position to render the
            Map to the screen.  TODO: Support multiple levels with varying
            colors.
 ****************************************************************************/
-void GameMap::renderMap() {
+void GameMap::renderMap(bool forceFullRender) {
     using namespace std;
     
-    for (int i = 0; i < mapSizeY; ++i)
-    {
-        for (int j = 0; j < mapSizeX; ++j)
+    if (forceFullRender) {
+        for (int i = 0; i < mapSizeY; ++i)
         {
-            if (j == 0)
+            for (int j = 0; j < mapSizeX; ++j)
             {
-                cout << "\033[0m";
-                for (int spaces = 0; spaces < SCREEN_OFFSET_MARGIN; ++spaces) {
-                    cout << ' ';
+                if (j == 0)
+                {
+                    cout << "\033[0m";
+                    for (int spaces = 0; spaces < SCREEN_OFFSET_MARGIN; ++spaces) {
+                        cout << ' ';
+                    }
                 }
-            }
 
-            if (mapStrings[i][j] == POWER_PELLET_CHARACTER || mapStrings[i][j] == NORML_PELLET_CHARACTER || mapStrings[i][j] == ' ')
-            {
-                cout << "\033[0m" << mapStrings[i][j];
-            }
-            else {
-                cout << "\033[32;44;1m";
-                if (mapStrings[i][j] == 'a') {
-                    cout << ' ';
+                if (mapStrings[i][j] == POWER_PELLET_CHARACTER || mapStrings[i][j] == NORML_PELLET_CHARACTER || mapStrings[i][j] == ' ')
+                {
+                    cout << "\033[0m" << mapStrings[i][j];
                 }
                 else {
-                    cout << mapStrings[i][j];
+                    cout << "\033[32;44;1m";
+                    if (mapStrings[i][j] == MAP_FILLER_CHARACTER) {
+                        cout << ' ';
+                    }
+                    else {
+                        cout << mapStrings[i][j];
+                    }
                 }
             }
+            cout << "\033[0m" << endl;
         }
-        cout << endl;
+    }
+    else {
+        // TODO: Render only the positions found in the Queue/List/Vector/etc. RenderQueue
+        RenderQueuePosition toRender;
+        COORD Position;
+        char charToPrint;
+        while (!renderQueue.empty()) {
+            // Loop over all of the positions to render to screen
+            toRender = renderQueue.back();
+            Position.X = toRender.xPos + SCREEN_OFFSET_MARGIN;
+            Position.Y = toRender.yPos;
+            charToPrint = mapStrings[toRender.yPos][toRender.xPos];
+            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+            if (charToPrint == ' '
+                || charToPrint == NORML_PELLET_CHARACTER 
+                || charToPrint == POWER_PELLET_CHARACTER )
+            {
+                cout << "\033[0m" << charToPrint;
+            }
+            else {
+                cout << "\033[32;44;1m" << charToPrint;
+            }
+
+            renderQueue.pop_back();
+        }
     }
 }
 
@@ -335,6 +408,17 @@ bool GameMap::loadMap() {
     return false;
 }
 
+/****************************************************************************
+Function: pushRenderQueuePosition
+Parameter(s): RenderQueuePosition - Entity position data for location to
+                                    render.
+Output: N/A
+Comments: Adds the RenderQueuePosition to the Vector to limit the tiles of 
+          the map that need rendering every frame.
+****************************************************************************/
+void GameMap::pushRenderQueuePosition(RenderQueuePosition newPos) {
+    renderQueue.push_back(newPos);
+}
 
 /****************************************************************************
 Function: setCharacterAtPosition

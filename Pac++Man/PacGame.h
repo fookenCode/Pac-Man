@@ -58,7 +58,7 @@ public:
 
     void SidesReset()    { switchedSides = false; }
     bool IsGameRunning() { return !((gameState == WINNING || gameState == RUNNING) && IsGameOver()); }
-    bool IsGameOver()    { return (mGameMap.getTotalDotsRemaining() <= 0); }
+    bool IsGameOver()    { return (mGameMap.getTotalDotsRemaining() <= 0 || mLivesBoard.getLivesLeft() < 0); }
     bool IsGhostAtPosition(int xPos, int yPos) {
         bool returnVal = false;
         for (int i = 0; i < MAX_ENEMIES; ++i) {
@@ -110,14 +110,18 @@ public:
                 mGhosts[i].setYPos(DEFAULT_AI_Y_POSITION);
             }
         }
+
         COORD Position;
         Position.X = 0;
         Position.Y = 0;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
         // Render all components
-        mGameMap.renderMap();
+        mGameMap.renderMap(true);
+        mScoreBoard.Render();
+        mLivesBoard.Render();
+        mCreditsBoard.Render();
         RenderAI(true);
-        RenderPlayer(true);
+        mPlayer.Render();
     } // END Reset
 
     /****************************************************************************
@@ -202,7 +206,7 @@ public:
         {
         case LEFT:
             nextPos = xPos - movementSpeed;
-            if (nextPos <1 && yPos == 11)
+            if (nextPos <0 && yPos == 11)
             {
                 returnCase = true;
                 switchedSides = true;
@@ -575,11 +579,13 @@ public:
         int nextPos = 0;
         char charAtNext = ' ';
         mGameMap.setCharacterAtPosition(' ', xPos, yPos);
+        mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition(xPos, yPos));
+        mPlayer.setInvalidated(true);
         switch (movementDirection)
         {
         case LEFT:
             nextPos = xPos - movementSpeed;
-            if (nextPos == 0)
+            if (nextPos < 0)
             {
                 mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), mGameMap.getMapEdge(), yPos);
                 mPlayer.setXPos(mGameMap.getMapEdge());
@@ -620,12 +626,12 @@ public:
             break;
         }
 
-        if (charAtNext == 'ú')
+        if (charAtNext == NORML_PELLET_CHARACTER)
         {
             mGameMap.decrementDotsRemaining();
             mScoreBoard.addPointsForPickup(charAtNext);
         }
-        else if (charAtNext == 'ù')
+        else if (charAtNext == POWER_PELLET_CHARACTER)
         {
             mGameMap.decrementDotsRemaining();
             setAllGhostsVulnerable(true);
@@ -678,17 +684,13 @@ public:
         {
         case ATTRACT:
         {
-            if (GetAsyncKeyState(VK_ADD) && creditInserted == false)
+            if (GetAsyncKeyState(VK_ADD))
             {
                 mCreditsBoard.incCredits();
                 creditInserted = true;
             }
-            else if (!GetAsyncKeyState(VK_ADD))
-            {
-                creditInserted = false;
-            }
 
-            if (GetAsyncKeyState(VK_NUMPAD1)||GetAsyncKeyState(VK_1) && mCreditsBoard.getCreditTotal() > 0)
+            if ((GetAsyncKeyState(VK_NUMPAD1)||GetAsyncKeyState(VK_1)) && mCreditsBoard.getCreditTotal() > 0)
             {
                 mCreditsBoard.decCredits();
                 ClearStatusText();
@@ -755,116 +757,17 @@ public:
     ****************************************************************************/
     void Render()
     {
-        COORD Position;
-        int xPos = mPlayer.getXPosition(), yPos = mPlayer.getYPosition(), direction = mPlayer.getMovementDirection();
-        switch (direction)
-        {
-        case LEFT:
-            if (switchedSides == true)
-            {
-                Position.X = SCREEN_OFFSET_MARGIN+1;
-                Position.Y = yPos;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                cout << mGameMap.getCharacterAtPosition(0, yPos);
-                Position.X = xPos + SCREEN_OFFSET_MARGIN;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                RenderPlayer();
-                SidesReset();
-            }
-            else
-            {
-
-                Position.X = xPos + SCREEN_OFFSET_MARGIN;
-                Position.Y = yPos;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                RenderPlayer();
-                if (mGameMap.isWallCharacter(xPos+1, yPos, BOTH) == false)
-                {
-                    cout << mGameMap.getCharacterAtPosition(xPos+1, yPos);
-                }
-            }
-            break;
-        case RIGHT:
-            if (switchedSides == true)
-            {
-                Position.X = mGameMap.getMapEdge() + SCREEN_OFFSET_MARGIN;
-                Position.Y = yPos;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                cout << mGameMap.getCharacterAtPosition(mGameMap.getMapEdge(), yPos);
-                Position.X = xPos + SCREEN_OFFSET_MARGIN;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                RenderPlayer();
-                SidesReset();
-            }
-            else
-            {
-                if (mGameMap.isWallCharacter(xPos - 1, yPos, BOTH) == true)
-                {
-                    RenderPlayer(true);
-                }
-                else
-                {
-                    Position.X = xPos + SCREEN_OFFSET_MARGIN-1;
-                    Position.Y = yPos;
-                    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                    cout << mGameMap.getCharacterAtPosition(xPos - 1, yPos);
-                    RenderPlayer();
-                }
-            }
-            break;
-        case UP:
-            Position.X = xPos + SCREEN_OFFSET_MARGIN;
-            Position.Y = yPos;
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-            RenderPlayer();
-
-            if (mGameMap.isWallCharacter(xPos, yPos+1, BOTH) == false)
-            {
-                Position.Y = yPos + 1;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                cout << mGameMap.getCharacterAtPosition(xPos, yPos+1);
-            }
-            break;
-        case DOWN:
-            Position.X = xPos + SCREEN_OFFSET_MARGIN;
-            Position.Y = yPos;
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-            RenderPlayer();
-            if (mGameMap.isWallCharacter(xPos, yPos - 1, BOTH) == false)
-            {
-                Position.Y = yPos - 1;
-                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-                cout << mGameMap.getCharacterAtPosition(xPos, yPos - 1);
-            }
-            break;
-        }
+        mScoreBoard.Render();
+        mLivesBoard.Render();
+        mCreditsBoard.Render();
+        mGameMap.renderMap();
+        mPlayer.Render();
         RenderAI();
-
         // TODO: Add the RenderEngine to run through all TrackedEntities for Rendering
         //          Score, Lives, Credits, etc.
     } // END Render
 
-    /****************************************************************************
-    Function: RenderPlayer
-    Parameter(s): bool - Boolean value on whether the Position needs to be set
-                         prior to rendering the Player character icon.
-    Output: N/A
-    Comments: Renders the player at their present position, if True.  Renders
-              at last Position set in Console, if False.
-    ****************************************************************************/
-    void RenderPlayer(bool moveCursorBeforeRender = false)
-    {
-        if (moveCursorBeforeRender)
-        {
-            COORD Position;
-            Position.X = mPlayer.getXPosition() + SCREEN_OFFSET_MARGIN;
-            Position.Y = mPlayer.getYPosition();
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-        }
-        /*SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);*/
-        cout << "\033[33;1m" << mGameMap.getCharacterAtPosition(mPlayer.getXPosition(), mPlayer.getYPosition()) << "\033[0m";
-        // SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
-    } // END RenderPlayer
+    
 
     /****************************************************************************
     Function: RenderAI
@@ -875,16 +778,17 @@ public:
     void RenderAI(bool forceRenderAll = false)
     {
         COORD Position;
+        HANDLE outHandle = GetStdHandle(STD_OUTPUT_HANDLE);
         for (int i = 0; i < MAX_ENEMIES; ++i) {
             if (!mGhosts[i].isActive() && !forceRenderAll) {
                 continue;
             }
             Position.X = mGhosts[i].getXPosition() + SCREEN_OFFSET_MARGIN;
             Position.Y = mGhosts[i].getYPosition();
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), mGhosts[i].getGhostColor());
+            SetConsoleCursorPosition(outHandle, Position);
+            SetConsoleTextAttribute(outHandle, mGhosts[i].getGhostColor());
             cout << mGhosts[i].getGhostIcon();
-            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+            SetConsoleTextAttribute(outHandle, 7);
         }
     } // END RenderAI
 

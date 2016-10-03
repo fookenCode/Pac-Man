@@ -13,9 +13,9 @@ public:
     int getLivesLeft() { return livesLeft; }
     int getMaxLives() { return maxLives; }
 
-    void setLivesLeft(int newLivesTotal) { livesLeft = newLivesTotal; }
-    inline void decLives() { livesLeft--; }
-    inline void incLives() { livesLeft++; }
+    void setLivesLeft(int newLivesTotal) { livesLeft = newLivesTotal; setInvalidated(true); }
+    inline void decLives() { livesLeft--; setInvalidated(true); }
+    inline void incLives() { livesLeft++; setInvalidated(true); }
 
     void setMaxLives(int newMaxLivesTotal) { maxLives = newMaxLivesTotal; }
 

@@ -16,27 +16,8 @@ public:
     void setMovementSpeed(int newSpeed) { movementSpeed = newSpeed; }
     void setMovementDirection(int newDirection) { movementDirection = newDirection; }
 
-    void updatePos()
-    {
-        switch (movementDirection)
-        {
-        case LEFT:
-            xPos -= movementSpeed;
-            break;
-        case RIGHT:
-            xPos += movementSpeed;
-            break;
-        case UP:
-            yPos -= movementSpeed;
-            break;
-        case DOWN:
-            yPos += movementSpeed;
-            break;
-        default:
-            break;
-        }
-    }
-
+    virtual void Update() = 0;
+    virtual void Move() = 0;
     virtual void Render() = 0;
     virtual void Reset() = 0;
 };

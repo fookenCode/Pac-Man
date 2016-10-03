@@ -33,6 +33,8 @@ public:
     void setRespawnTimer(int timer) { this->mRespawnTimer = timer; }
     int getRespawnTimer() { return this->mRespawnTimer; }
 
+    virtual void Update();
+    virtual void Move();
     virtual void Render();
     virtual void Reset();
 };

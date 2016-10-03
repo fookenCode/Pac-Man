@@ -31,3 +31,11 @@ Comments: Used internally to create the Character Map for game board.
 void GhostEntity::Render() {
     // TODO
 }
+
+void GhostEntity::Update() {
+    // TODO
+}
+
+void GhostEntity::Move() {
+    // TODO
+}

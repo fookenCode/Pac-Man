@@ -28,7 +28,7 @@ int main(int args, char *argv)
     startTime = GetTickCount();
     
     COORD FrameCounterPosition;
-    FrameCounterPosition.X = 25;
+    FrameCounterPosition.X = 18;
     FrameCounterPosition.Y = 30;
     
     int frames = 0;
@@ -36,6 +36,8 @@ int main(int args, char *argv)
     clock_t deltaTime = 0;
     double frameRate = 30;
     double averageFramesPerMS = 33.333;
+    double lowestFPS, highestFPS;
+    lowestFPS = highestFPS = 0.0;
     while (!GetAsyncKeyState(VK_ESCAPE) && myGame.IsGameRunning())
     {
         clock_t start = clock();
@@ -48,14 +50,11 @@ int main(int args, char *argv)
             //clock_t end = clock();
             //double elapsed_ms = double(end - begin);
             //SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
-            //cout << "Elaped ms: " << elapsed_ms;
+            //cout << ": " << elapsed_ms;
         }
-
         myGame.Render();
         clock_t end = clock();
         frames++;
-
-        deltaTime += end - start;
 
         if (end - absStart > CLOCKS_PER_SEC && frames > 10) {
             double fps = (double)frames / ((end - absStart) / CLOCKS_PER_SEC);
@@ -63,16 +62,13 @@ int main(int args, char *argv)
             absStart = end;
             frames = 0;
             cout << "FPS: " << fps;
+            if (fps > highestFPS) {
+                highestFPS = fps;
+            }
+            if (fps < lowestFPS || lowestFPS == 0.0) {
+                lowestFPS = fps;
+            }
         }
-        /*if (deltaTime > CLOCKS_PER_SEC) {
-            frameRate = (double)frames*0.5 + frameRate*0.5;
-            frames = 0;
-            deltaTime -= CLOCKS_PER_SEC;
-            averageFramesPerMS = 1000.0 / (frameRate == 0 ? 0.001 : frameRate);
-
-            //SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
-            //cout << "Elaped ms: " << averageFramesPerMS;
-        }*/
 
     }
 
@@ -82,6 +78,7 @@ int main(int args, char *argv)
     Position.X = 21;
     Position.Y = 30;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+    cout << "\nLowest: " << lowestFPS << " Highest: " << highestFPS << endl;
     system("PAUSE");
     return EXIT_SUCCESS;
 }

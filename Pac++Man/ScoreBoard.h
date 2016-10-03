@@ -13,9 +13,13 @@ public:
 
     long getScoreTotal() { return scoreTotal; }
 
-    void setScoreTotal(int newScoreTotal) { scoreTotal = newScoreTotal; }
-    void addScoreTotal(int scoreTotalToAdd) { scoreTotal += scoreTotalToAdd; }
-    void addPointsForPickup(char mapCharacter) { (mapCharacter == POWER_PELLET_CHARACTER) ? scoreTotal += POWER_PELLET_SCORE_AMOUNT : scoreTotal += NORML_PELLET_SCORE_AMOUNT; }
+    void setScoreTotal(int newScoreTotal) { scoreTotal = newScoreTotal; setInvalidated(true); }
+    void addScoreTotal(int scoreTotalToAdd) { scoreTotal += scoreTotalToAdd; setInvalidated(true); }
+    void addPointsForPickup(char mapCharacter) { (mapCharacter == POWER_PELLET_CHARACTER) ? 
+                                                    scoreTotal += POWER_PELLET_SCORE_AMOUNT 
+                                                    : scoreTotal += NORML_PELLET_SCORE_AMOUNT; 
+                                                   setInvalidated(true);
+                                                }
 
     virtual void Render();
     virtual void Reset();

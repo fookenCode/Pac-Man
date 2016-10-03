@@ -14,9 +14,14 @@ private:
 public:
     PlayerEntity();
     virtual ~PlayerEntity() { }
+    virtual void Update();
+    virtual void Move();
     virtual void Render();
     virtual void Reset();
     char getPlayerIcon() { return this->currentPlayerIcon; }
-    char getIconForDirection(int direction = -1) { return (direction < 0)? this->playerCharacterIcons[getMovementDirection()]:this->playerCharacterIcons[direction]; }
+    char getIconForDirection(int direction = -1) { return (direction < 0)? 
+                                                          this->playerCharacterIcons[getMovementDirection()]
+                                                          : this->playerCharacterIcons[direction]; 
+    }
 };
 #endif // _PLAYER_ENTITY_H_

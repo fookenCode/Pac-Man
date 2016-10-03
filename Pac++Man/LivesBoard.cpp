@@ -3,7 +3,7 @@
 #include <iostream>
 
 LivesBoard::LivesBoard() {
-
+    setInvalidated(true);
 }
 
 LivesBoard::~LivesBoard() {
@@ -17,24 +17,21 @@ Output: N/A
 Comments: Renders the number of Player lives that are currently Active.
 ****************************************************************************/
 void LivesBoard::Render() {
-    COORD Position;
-    Position.X = xPos;
-    Position.Y = yPos;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-    std::cout << LIVES_NAME_TEXT;
-    Position.Y += 1;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
-    for (int i = 0; i < livesLeft; ++i)
-    {
-        std::cout << LIVES_BOARD_CHARACTER << ' ';
+    if (isInvalidated) {
+        COORD Position;
+        Position.X = xPos;
+        Position.Y = yPos;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+        std::cout << "\033[40;37;1m" << LIVES_NAME_TEXT;
+        Position.Y += 1;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+        std::cout << "\033[33;1m" << LIVES_BOARD_CHARACTER << " x " << livesLeft << "\033[0m";
+
+        // Reset the Invalidated flag
+        isInvalidated = false;
     }
-    for (int i = livesLeft; i < MAX_VISIBLE_LIVES; ++i) {
-        std::cout << ' ';
-    }
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 }
 
 void LivesBoard::Reset() {
-
+    isInvalidated = false;
 }
