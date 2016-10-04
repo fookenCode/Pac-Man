@@ -239,19 +239,22 @@ Comments: Tests all 4 directions from the given position against the
 MapStrings and returns a bitmask of the valid directions.
 ****************************************************************************/
 unsigned GameMap::getAvailableDirectionsForPosition(int xPos, int yPos) {
-    unsigned returnValue;
+    unsigned returnValue = 0;
     // Left
     if (checkForEmptySpace(xPos - 1, yPos)) {
-        returnValue &= LEFT_BIT;
+        returnValue |= LEFT_BIT;
     }
+    // Right
     if (checkForEmptySpace(xPos + 1, yPos)) {
-        returnValue &= RIGHT_BIT;
+        returnValue |= RIGHT_BIT;
     }
+    // Down
     if (checkForEmptySpace(xPos, yPos + 1)) {
-        returnValue &= DOWN_BIT;
+        returnValue |= DOWN_BIT;
     }
+    // Up
     if (checkForEmptySpace(xPos, yPos - 1)) {
-        returnValue &= UP_BIT;
+        returnValue |= UP_BIT;
     }
 
     return returnValue;
@@ -273,6 +276,17 @@ bool GameMap::checkForEmptySpace(int xPos, int yPos) {
     }
     return false;
 }
+
+bool GameMap::checkForEmptySpace(RenderQueuePosition &posToCheck) {
+    if (posToCheck.xPos >= 0 && posToCheck.xPos <= mapSizeX && posToCheck.yPos >= 0 && posToCheck.yPos < mapSizeY) {
+        char toTest = mapStrings[posToCheck.yPos][posToCheck.xPos];
+        if (toTest == NORML_PELLET_CHARACTER || toTest == ' ' || toTest == POWER_PELLET_CHARACTER) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 /****************************************************************************
 Function: renderMap

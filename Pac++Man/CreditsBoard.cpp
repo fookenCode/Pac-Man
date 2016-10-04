@@ -19,8 +19,8 @@ at the bottom of the screen.
 void CreditsBoard::Render() {
     if (isInvalidated) {
         COORD Position;
-        Position.X = xPos;
-        Position.Y = yPos;
+        Position.X = (int)xPos;
+        Position.Y = (int)yPos;
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
         std::cout << CREDITS_NAME_TEXT << creditTotal;

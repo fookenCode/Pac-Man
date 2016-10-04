@@ -36,8 +36,8 @@ Comments: Renders the Player to screen at the Position stored internally.
 void PlayerEntity::Render() {
     if (isInvalidated) {
         COORD Position;
-        Position.X = xPos + SCREEN_OFFSET_MARGIN;
-        Position.Y = yPos;
+        Position.X = (int)xPos + SCREEN_OFFSET_MARGIN;
+        Position.Y = (int)yPos;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
         std::cout << "\033[33;1m" << this->getIconForDirection() << "\033[0m";
         setInvalidated(false);
@@ -45,10 +45,49 @@ void PlayerEntity::Render() {
     
 }
 
-void PlayerEntity::Update() {
-    // TODO
+void PlayerEntity::Update(unsigned validDirections, double timeStep) {
+    if (getMovementSpeed() <= 0)
+    {
+        return;
+    }
+    
+    if (validDirections & (LEFT_BIT << getMovementDirection()))
+    {
+        Move(timeStep);
+    }
 }
 
-void PlayerEntity::Move() {
-    // TODO
+void PlayerEntity::Move(double timeStep) {
+    int movementDirection = getMovementDirection();
+    double movementSpeed = (double) getMovementSpeed() * timeStep;
+    double xPos = getXPosition();
+    double yPos = getYPosition();
+    double nextPos = 0.0;
+
+    setInvalidated(true);
+    switch (movementDirection)
+    {
+    case LEFT:
+        nextPos = xPos - movementSpeed;
+        if ((int)nextPos <= 0) {
+            nextPos = getMaxValidWidth();
+        }
+        setXPos(nextPos);
+        break;
+    case RIGHT:
+        nextPos = xPos + movementSpeed;
+        if ((int)nextPos > getMaxValidWidth()) {
+            nextPos = 0.0;
+        }
+        setXPos(nextPos);
+        break;
+    case UP:
+        nextPos = yPos - movementSpeed;
+        setYPos(nextPos);
+        break;
+    case DOWN:
+        nextPos = yPos + movementSpeed;
+        setYPos(nextPos);
+        break;
+    }
 }

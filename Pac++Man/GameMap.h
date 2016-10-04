@@ -40,6 +40,7 @@ public:
     
     bool isWallCharacter(int xPos, int yPos, int wallGroupToTest);
     bool checkForEmptySpace(int xPos, int yPos);
+    bool checkForEmptySpace(RenderQueuePosition &posToCheck);
     unsigned getAvailableDirectionsForPosition(int xPos, int yPos);
 
 

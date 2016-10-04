@@ -14,8 +14,8 @@ private:
 public:
     PlayerEntity();
     virtual ~PlayerEntity() { }
-    virtual void Update();
-    virtual void Move();
+    virtual void Update(unsigned validDirections, double timeStep);
+    virtual void Move(double timeStep);
     virtual void Render();
     virtual void Reset();
     char getPlayerIcon() { return this->currentPlayerIcon; }

@@ -14,9 +14,13 @@ private:
     char mGhostIcon;
     bool mActive;
 
+    Entity *mTarget;
 public:
     GhostEntity();
     virtual ~GhostEntity() { }
+
+    void setTarget(Entity *newTarget) { if (newTarget != nullptr) mTarget = newTarget; }
+    const Entity *getTarget() { return mTarget; }
 
     void setActive(bool status) { this->mActive = status; }
     bool isActive() { return this->mActive; }
@@ -27,14 +31,15 @@ public:
     void setGhostIcon(char icon) { this->mGhostIcon = icon; }
     char getGhostIcon() { return this->mGhostIcon; }
 
-    void setVulnerable(bool status) { (status) ? mVulnerableStatus = VULNERABLE : mVulnerableStatus = INVULNERABLE; }
+    void setVulnerable(bool status) { (status) ? mVulnerableStatus = VULNERABLE : mVulnerableStatus = INVULNERABLE; setInvalidated(true); }
     bool isVulnerable() { return (mVulnerableStatus == VULNERABLE); }
 
     void setRespawnTimer(int timer) { this->mRespawnTimer = timer; }
     int getRespawnTimer() { return this->mRespawnTimer; }
 
-    virtual void Update();
-    virtual void Move();
+    void initializeGhost();
+    virtual void Update(unsigned validDirections, double timeStep);
+    virtual void Move(double timeStep);
     virtual void Render();
     virtual void Reset();
 };

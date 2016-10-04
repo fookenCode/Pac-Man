@@ -34,44 +34,41 @@ int main(int args, char *argv)
     int frames = 0;
     clock_t absStart = clock();
     clock_t deltaTime = 0;
+    clock_t gameStart = 0;
     double frameRate = 30;
     double averageFramesPerMS = 33.333;
     double lowestFPS, highestFPS;
+    
     lowestFPS = highestFPS = 0.0;
-    while (!GetAsyncKeyState(VK_ESCAPE) && myGame.IsGameRunning())
+    do
     {
-        clock_t start = clock();
         myGame.GatherGamePlayInput();
-        if (GetTickCount() - startTime > 93)
+        if (clock() - gameStart >= 16)
         {
-            startTime = GetTickCount();
-            //clock_t begin = clock();
-            myGame.Update();
-            //clock_t end = clock();
-            //double elapsed_ms = double(end - begin);
-            //SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
-            //cout << ": " << elapsed_ms;
-        }
-        myGame.Render();
-        clock_t end = clock();
-        frames++;
 
-        if (end - absStart > CLOCKS_PER_SEC && frames > 10) {
-            double fps = (double)frames / ((end - absStart) / CLOCKS_PER_SEC);
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
-            absStart = end;
-            frames = 0;
-            cout << "FPS: " << fps;
-            if (fps > highestFPS) {
-                highestFPS = fps;
-            }
-            if (fps < lowestFPS || lowestFPS == 0.0) {
-                lowestFPS = fps;
+            double timeStep = (double)(clock() - gameStart) / 108;
+            myGame.Update(timeStep);
+            myGame.Render();
+            gameStart = clock();
+
+            clock_t end = clock();
+            frames++;
+
+            if (end - absStart > CLOCKS_PER_SEC && frames > 10) {
+                double fps = (double)frames / ((end - absStart) / CLOCKS_PER_SEC);
+                SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
+                absStart = end;
+                frames = 0;
+                cout << "FPS: " << fps;
+                if (fps > highestFPS) {
+                    highestFPS = fps;
+                }
+                if (fps < lowestFPS || lowestFPS == 0.0) {
+                    lowestFPS = fps;
+                }
             }
         }
-
-    }
-
+    } while (!GetAsyncKeyState(VK_ESCAPE) && myGame.IsGameRunning());
     // GAME END
     myGame.RenderStatusText("\033[33;1mbold red text\033[0m");
     COORD Position;
@@ -79,6 +76,6 @@ int main(int args, char *argv)
     Position.Y = 30;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
     cout << "\nLowest: " << lowestFPS << " Highest: " << highestFPS << endl;
-    system("PAUSE");
+    while (!GetAsyncKeyState(VK_RETURN)) { }
     return EXIT_SUCCESS;
 }

@@ -37,6 +37,7 @@ const static char POWER_PELLET_CHARACTER            = (char)0xF9;
 const static char NORML_PELLET_CHARACTER            = (char)0xFA;
 const static char MAP_FILLER_CHARACTER              = (char)0x61;
 const static char LIVES_BOARD_CHARACTER             = (char)0x3C;
+const static char SPAWN_BOX_BARRIER_CHARACTER       = (char)0x7E;
 const static char *LEVEL_FILENAME_TEMPLATE          = "Assets\\Levels\\PacMan_Level_%d.txt";
 const static char *SCORE_NAME_TEXT                  = "Score";
 const static char *LIVES_NAME_TEXT                  = "Lives";

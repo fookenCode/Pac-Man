@@ -81,33 +81,25 @@ public:
     ****************************************************************************/
     void Reset()
     {
-        // CommandQueue used to create free-flowing and fast response to input by 
-        // queueing until next opportunity to move in desired direction
-        commandQueue = -1;
-        // Controls the state of whether the player has accessed the tunnel to either side of Map
-        switchedSides = false;
         ghostMultiplier = 1;
         vulnerabilityTimer = 0;
 
         // Initialize Player object and status
+        mPlayer.setMaxValidWidth(mGameMap.getMapEdge());
         mPlayer.Reset();
-        mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), mPlayer.getXPosition(), mPlayer.getYPosition());
-
 
         // Initialize all AI objects and status
         for (int i = 0; i < MAX_ENEMIES; ++i) {
-            mGhosts[i].Reset();
             mGhosts[i].setGhostColor(GREEN + i);
+            mGhosts[i].Reset();
+            mGhosts[i].setMaxValidWidth(mGameMap.getMapEdge());
             if (i == 0) {
                 mGhosts[i].setActive(true);
+                mGhosts[i].setTarget(&mPlayer);
                 mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
                 mGhosts[i].setYPos(AI_BOX_ACTIVE_Y_POSITION);
                 mGhosts[i].setMovementDirection(LEFT);
                 mGhosts[i].setMovementSpeed(1);
-            }
-            else {
-                mGhosts[i].setXPos(DEFAULT_AI_X_POSITION + i*2);
-                mGhosts[i].setYPos(DEFAULT_AI_Y_POSITION);
             }
         }
 
@@ -120,7 +112,7 @@ public:
         mScoreBoard.Render();
         mLivesBoard.Render();
         mCreditsBoard.Render();
-        RenderAI(true);
+        RenderAI();
         mPlayer.Render();
     } // END Reset
 
@@ -131,7 +123,7 @@ public:
     Comments: Called when Player is caught by Ghosts or Level Completes
     ****************************************************************************/
     void RestartLevel() {
-        mGameMap.setCharacterAtPosition(' ', mPlayer.getXPosition(), mPlayer.getYPosition());
+        mGameMap.setCharacterAtPosition(' ', (int)mPlayer.getXPosition(), (int)mPlayer.getYPosition());
         Reset();        
         restartDelayTimer = GetTickCount();
         mLivesBoard.decLives();
@@ -171,14 +163,14 @@ public:
     Output: N/A
     Comments: Game Update on time interval
     ****************************************************************************/
-    void Update()
+    void Update(double timeStep)
     {
         if (gameState == RUNNING) {
             // Move Character
-            UpdatePlayerCharacter();
+            UpdatePlayerCharacter(timeStep);
 
             // Move AI
-            UpdateAICharacters();
+            UpdateAICharacters(timeStep);
 
             if (vulnerabilityTimer > 0 && GetTickCount() - vulnerabilityTimer > VULNERABILITY_TIME_LIMIT) {
                 // Reset all of the AI Characters Vulnerability
@@ -199,148 +191,24 @@ public:
     ****************************************************************************/
     bool CanMoveInSpecifiedDirection(int direction, int xPos, int yPos, int movementSpeed = 1)
     {
-        bool returnCase = false;
-        int nextPos = 0;
-        char spaceToMove;
+        GameMap::RenderQueuePosition posToCheck(xPos, yPos);
         switch (direction)
         {
         case LEFT:
-            nextPos = xPos - movementSpeed;
-            if (nextPos <0 && yPos == 11)
-            {
-                returnCase = true;
-                switchedSides = true;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
-                {
-                    returnCase = true;
-                }
-            }
+            posToCheck.xPos -= movementSpeed;
             break;
         case RIGHT:
-            nextPos = xPos + movementSpeed;
-            if (nextPos > mGameMap.getMapEdge() && yPos == 11)
-            {
-                returnCase = true;
-                switchedSides = true;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
-                {
-                    returnCase = true;
-                }
-            }
+            posToCheck.xPos += movementSpeed;
             break;
         case UP:
-            nextPos = yPos - movementSpeed;
-            spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
-            {
-                returnCase = true;
-            }
+            posToCheck.yPos -= movementSpeed;
             break;
         case DOWN:
-            nextPos = yPos + movementSpeed;
-            // Protect from Entity entering the Home Base of the Ghosts
-            if (((xPos >= 15 && xPos <= 18) && yPos == 11))
-            {
-                returnCase = false;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
-                if (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ')
-                {
-                    returnCase = true;
-                }
-            }
+            posToCheck.yPos += movementSpeed;
             break;
         }
-        return returnCase;
+        return mGameMap.checkForEmptySpace(posToCheck);
     } // END CanMoveInSpecifiedDirection
-
-    /****************************************************************************
-    Function: GhostCanMoveInSpecifiedDirection
-    Parameter(s): int - Enum value (See @Constants.h) for valid Directions input.
-    int - X coordinate of Position to check
-    int - Y coordinate of Position to check
-    int - Movement speed (default = 1)
-    Output: bool - True if move is allowed, False if not.
-    Comments: Universal check for all Entities on the Map for
-    whether next position is valid move.
-    ****************************************************************************/
-    bool GhostCanMoveInSpecifiedDirection(GhostEntity &ghost, int testDirection = MAX_DIRECTION) {
-        bool returnCase = false;
-        int nextPos = 0;
-        int xPos = ghost.getXPosition();
-        int yPos = ghost.getYPosition();
-        int movementSpeed = ghost.getMovementSpeed();
-        char playerIcon = mPlayer.getIconForDirection();
-        char spaceToMove;
-        switch ((testDirection==MAX_DIRECTION)?ghost.getMovementDirection():testDirection)
-        {
-        case LEFT:
-            nextPos = xPos - movementSpeed;
-            if (nextPos <1 && yPos == 11)
-            {
-                returnCase = true;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                if (!IsGhostAtPosition(nextPos, yPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
-                {
-                    returnCase = true;
-                }
-            }
-            break;
-        case RIGHT:
-            nextPos = xPos + movementSpeed;
-            if (nextPos > mGameMap.getMapEdge() && yPos == 11)
-            {
-                returnCase = true;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                if (!IsGhostAtPosition(nextPos, yPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
-                {
-                    returnCase = true;
-                }
-            }
-            break;
-        case UP:
-            nextPos = yPos - movementSpeed;
-            spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            if (!IsGhostAtPosition(xPos, nextPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
-            {
-                returnCase = true;
-            }
-            break;
-        case DOWN:
-            nextPos = yPos + movementSpeed;
-            // Protect from Entity entering the Home Base of the Ghosts
-            if (((xPos >= 15 && xPos <= 18) && yPos == 11))
-            {
-                returnCase = false;
-            }
-            else
-            {
-                spaceToMove = mGameMap.getCharacterAtPosition(xPos, nextPos);
-                if (!IsGhostAtPosition(xPos, nextPos) && (spaceToMove == 'ù' || spaceToMove == 'ú' || spaceToMove == ' ' || spaceToMove == playerIcon))
-                {
-                    returnCase = true;
-                }
-            }
-            break;
-        }
-        return returnCase;
-    } // END GhostCanMoveInSpecifiedDirection
 
     /****************************************************************************
     Function: TriggerGhostEaten
@@ -350,15 +218,10 @@ public:
     Comments: Resets the GhostEntity back to Spawn Box position with Respawn Timer.
     ****************************************************************************/
     void TriggerGhostEaten(GhostEntity &entity) {
-        entity.setActive(false);
-        entity.setVulnerable(false);
-        mScoreBoard.addScoreTotal(GHOST_SCORE_AMOUNT*ghostMultiplier);
-        entity.setXPos(DEFAULT_AI_X_POSITION + 2*(entity.getGhostColor() % GREEN));
-        entity.setYPos(DEFAULT_AI_Y_POSITION);
-        entity.setMovementDirection(MAX_DIRECTION);
-        entity.setMovementSpeed(0);
+        mScoreBoard.addScoreTotal(GHOST_SCORE_AMOUNT*ghostMultiplier++);
+        entity.Reset();
         entity.setRespawnTimer(GetTickCount());
-        RenderSingleAI(entity);
+        entity.Render();
     } // END TriggerGhostEaten
 
     /****************************************************************************
@@ -367,151 +230,76 @@ public:
     Output: N/A
     Comments: Update all Active AI currently on the Map
     ****************************************************************************/
-    void UpdateAICharacters() {
-        bool canMoveCurr, canMoveNext = false;
-        int nextMoveDir = MAX_DIRECTION;
+    void UpdateAICharacters(double timeStep) {
         for (int i =0; i < MAX_ENEMIES; ++i) {
             if (!mGhosts[i].isActive()) {
                 int respawnTimer = mGhosts[i].getRespawnTimer();
                 if (GetTickCount() - lastAISpawnTime > GHOST_SPAWN_TIMER && (!respawnTimer || GetTickCount() - respawnTimer > GHOST_SPAWN_TIMER*4)) {
-                    mGhosts[i].setActive(true);
-                    ClearInitialGhostPosition(mGhosts[i]);
-                    mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
-                    mGhosts[i].setYPos(AI_BOX_ACTIVE_Y_POSITION);
-                    mGhosts[i].setMovementDirection(LEFT);
-                    mGhosts[i].setMovementSpeed(1);
+                    mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition((int)mGhosts[i].getXPosition(), (int)mGhosts[i].getYPosition()));
+                    mGhosts[i].initializeGhost();
+                    mGhosts[i].setTarget(&mPlayer);
                     lastAISpawnTime = GetTickCount();
                 }
                 continue;
             }
+            int xPos = (int)mGhosts[i].getXPosition();
+            int yPos = (int)mGhosts[i].getYPosition();
 
-            canMoveNext = false;
-            nextMoveDir = MAX_DIRECTION;
-            canMoveCurr = GhostCanMoveInSpecifiedDirection(mGhosts[i]);
-            switch (mGhosts[i].getMovementDirection()) {
-            case LEFT:
-            case RIGHT:
-                nextMoveDir = (mGhosts[i].getYPosition() < mPlayer.getYPosition()) ? DOWN : UP;
-                canMoveNext = GhostCanMoveInSpecifiedDirection(mGhosts[i], nextMoveDir);
-                break;
-            case UP:
-            case DOWN:
-                nextMoveDir = (mGhosts[i].getXPosition() < mPlayer.getXPosition()) ? RIGHT : LEFT;
-                canMoveNext = GhostCanMoveInSpecifiedDirection(mGhosts[i], nextMoveDir);
-                break;
-            default:
-                break;
-            };
-            if (canMoveNext || !canMoveCurr) {
-                mGhosts[i].setMovementDirection(nextMoveDir);
-            }
-            if (canMoveNext || canMoveCurr) {
-                MoveAI(mGhosts[i]);
-                // Exit this function early to ensure that no further AI movements
-                // are performed if the GameState has changed due to collision with player
-                if (gameState == READY) {
-                    return;
-                }
+            mGhosts[i].Update(mGameMap.getAvailableDirectionsForPosition(xPos, yPos), timeStep);
+            
+            if (mGhosts[i].IsInvalidated()) {
+                mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition(xPos, yPos));
             }
         } // END For(i<MAX_ENEMIES)
+
+        CheckCollisions();
     } // END UpdateAICharacters
 
-    /****************************************************************************
-    Function: MoveAI
-    Parameter(s): GhostEntity & - Reference to the AI object to move
+
+    /*********************************************************************************
+    Function: CheckCollisions
+    Parameter(s): N/A
     Output: N/A
-    Comments: Move the AI along their currently set Direction, 
-              and check for collision.
-    ****************************************************************************/
-    void MoveAI(GhostEntity &entity)
-    {
-        int movementDirection = entity.getMovementDirection();
-        int movementSpeed = entity.getMovementSpeed();
-        int xPos = entity.getXPosition();
-        int yPos = entity.getYPosition();
-        int nextPos = 0;
-        char charAtNext;
-        COORD Position;
-        Position.X = xPos + SCREEN_OFFSET_MARGIN;
-        Position.Y = yPos;
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-        cout << mGameMap.getCharacterAtPosition(xPos, yPos);
-
-        switch (movementDirection)
+    Comments: Checks for collisions of Player against the Map and Active Ghosts.
+    *********************************************************************************/
+    void CheckCollisions() {
+        char charAtPos = ' ';
+        int xPos = (int)mPlayer.getXPosition();
+        int yPos = (int)mPlayer.getYPosition();
+        charAtPos = mGameMap.getCharacterAtPosition(xPos, yPos);
+        
+        if (charAtPos == NORML_PELLET_CHARACTER)
         {
-        case LEFT:
-            nextPos = xPos - movementSpeed;
-            if (nextPos == 0)
-            {
-                entity.setXPos(mGameMap.getMapEdge());
-            }
-            else
-            {
-                charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                entity.setXPos(nextPos);
-                if (charAtNext == mPlayer.getIconForDirection())
-                {
-                    if (entity.isVulnerable()) {
-                        TriggerGhostEaten(entity);
-                    }
-                    else {
-                        RestartLevel();
-                    }
-                }
+            mGameMap.decrementDotsRemaining();
+            mGameMap.setCharacterAtPosition(' ', xPos, yPos);
+            mScoreBoard.addPointsForPickup(charAtPos);
+        }
+        else if (charAtPos == POWER_PELLET_CHARACTER)
+        {
+            mGameMap.decrementDotsRemaining();
+            mGameMap.setCharacterAtPosition(' ', xPos, yPos); 
+            setAllGhostsVulnerable(true);
+            ghostMultiplier = 1;
+            vulnerabilityTimer = GetTickCount();
+            mScoreBoard.addPointsForPickup(charAtPos);
+        }
+
+        for (int i = 0; i < MAX_ENEMIES; ++i) {
+            if (!mGhosts[i].isActive()) {
+                continue;
             }
 
-            break;
-        case RIGHT:
-            nextPos = xPos + movementSpeed;
-            if (nextPos > mGameMap.getMapEdge())
-            {
-                entity.setXPos(0);
-            }
-            else
-            {
-                charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                entity.setXPos(nextPos);
-                if (charAtNext == mPlayer.getIconForDirection())
-                {
-                    if (entity.isVulnerable()) {
-                        TriggerGhostEaten(entity);
-                    }
-                    else {
-                        RestartLevel();
-                    }
-                }
-            }
-            break;
-        case UP:
-            nextPos = yPos - movementSpeed;
-            charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            entity.setYPos(nextPos);
-            if (charAtNext == mPlayer.getIconForDirection())
-            {
-                if (entity.isVulnerable()) {
-                    TriggerGhostEaten(entity);
+            if (xPos == (int)mGhosts[i].getXPosition() && yPos == (int)mGhosts[i].getYPosition()) {
+                if (mGhosts[i].isVulnerable()) {
+                    TriggerGhostEaten(mGhosts[i]);
                 }
                 else {
                     RestartLevel();
                 }
             }
-            break;
-        case DOWN:
-            nextPos = yPos + movementSpeed;
-            charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            entity.setYPos(nextPos);
-            if (charAtNext == mPlayer.getIconForDirection())
-            {
-                if (entity.isVulnerable()) {
-                    TriggerGhostEaten(entity);
-                }
-                else {
-                    RestartLevel();
-                }
-            }
-            break;
-        };
-    } // End MoveAI()
+        }
+    }
+
 
     /*********************************************************************************
     Function: UpdatePlayerCharacter
@@ -520,125 +308,29 @@ public:
     Comments: Input Update for Player object.  Command Queue logic used for ensuring
               the next possible move in the direction queued will be attempted.
     *********************************************************************************/
-    void UpdatePlayerCharacter()
+    void UpdatePlayerCharacter(double timeStep)
     {
-        if (mPlayer.getMovementSpeed() <= 0)
-        {
-            return;
-        }
+        int cacheXPos = (int)mPlayer.getXPosition();
+        int cacheYPos = (int)mPlayer.getYPosition();
+        mPlayer.Update( mGameMap.getAvailableDirectionsForPosition(cacheXPos, cacheYPos), timeStep );
+        int xPos = (int)mPlayer.getXPosition();
+        int yPos = (int)mPlayer.getYPosition();
 
-        if (commandQueue != -1)
-        {
-            int plyrDirection = mPlayer.getMovementDirection();
-            if ((commandQueue == UP && plyrDirection == DOWN) || (commandQueue == DOWN && plyrDirection == UP)
-                || (commandQueue == RIGHT && plyrDirection == LEFT) || (commandQueue == LEFT && plyrDirection == RIGHT))
-            {
-                commandQueue = -1;
-            }
-        }
-
-        if (commandQueue != -1 && CanMoveInSpecifiedDirection(commandQueue, mPlayer.getXPosition(), mPlayer.getYPosition()))
-        {
-            mPlayer.setMovementDirection(commandQueue);
-            mPlayer.setMovementSpeed(1);
-            MovePlayerCharacter();
-            commandQueue = -1;
-        }
-        else if (CanMoveInSpecifiedDirection(mPlayer.getMovementDirection(), mPlayer.getXPosition(), mPlayer.getYPosition()))
-        {
-            MovePlayerCharacter();
+        // Player is invalidated if a Move has occurred
+        if (mPlayer.IsInvalidated()) {
+            mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition(cacheXPos, cacheYPos));
+            CheckCollisions();
         }
     }
 
     void UpdatePlayerDirection(int direction)
     {
-        if (CanMoveInSpecifiedDirection(direction, mPlayer.getXPosition(), mPlayer.getYPosition()))
+        if (CanMoveInSpecifiedDirection(direction, (int)mPlayer.getXPosition(), (int)mPlayer.getYPosition()))
         {
             mPlayer.setMovementDirection(direction);
             mPlayer.setMovementSpeed(1);
         }
-        else
-        {
-            commandQueue = direction;
-        }
     } // END UpdatePlayerCharacter
-
-    /****************************************************************************
-    Function: MovePlayerCharacter
-    Parameter(s): N/A
-    Output: N/A
-    Comments: Performs the move based on Direction & MovementSpeed along path.
-              Also, checks for collision and updates score accordingly.
-    ****************************************************************************/
-    void MovePlayerCharacter()
-    {
-        int movementDirection = mPlayer.getMovementDirection();
-        int movementSpeed = mPlayer.getMovementSpeed();
-        int xPos = mPlayer.getXPosition();
-        int yPos = mPlayer.getYPosition();
-        int nextPos = 0;
-        char charAtNext = ' ';
-        mGameMap.setCharacterAtPosition(' ', xPos, yPos);
-        mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition(xPos, yPos));
-        mPlayer.setInvalidated(true);
-        switch (movementDirection)
-        {
-        case LEFT:
-            nextPos = xPos - movementSpeed;
-            if (nextPos < 0)
-            {
-                mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), mGameMap.getMapEdge(), yPos);
-                mPlayer.setXPos(mGameMap.getMapEdge());
-            }
-            else
-            {
-                charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), nextPos, yPos);
-                mPlayer.setXPos(nextPos);
-            }
-
-            break;
-        case RIGHT:
-            nextPos = xPos + movementSpeed;
-            if (nextPos > mGameMap.getMapEdge())
-            {
-                mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), 0, yPos);
-                mPlayer.setXPos(0);
-            }
-            else
-            {
-                charAtNext = mGameMap.getCharacterAtPosition(nextPos, yPos);
-                mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), nextPos, yPos);
-                mPlayer.setXPos(nextPos);
-            }
-            break;
-        case UP:
-            nextPos = yPos - movementSpeed;
-            charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), xPos, nextPos);
-            mPlayer.setYPos(nextPos);
-            break;
-        case DOWN:
-            nextPos = yPos + movementSpeed;
-            charAtNext = mGameMap.getCharacterAtPosition(xPos, nextPos);
-            mGameMap.setCharacterAtPosition(mPlayer.getIconForDirection(), xPos, nextPos);
-            mPlayer.setYPos(nextPos);
-            break;
-        }
-
-        if (charAtNext == NORML_PELLET_CHARACTER)
-        {
-            mGameMap.decrementDotsRemaining();
-            mScoreBoard.addPointsForPickup(charAtNext);
-        }
-        else if (charAtNext == POWER_PELLET_CHARACTER)
-        {
-            mGameMap.decrementDotsRemaining();
-            setAllGhostsVulnerable(true);
-            vulnerabilityTimer = GetTickCount();
-            mScoreBoard.addPointsForPickup(charAtNext);
-        }
-    } // End MovePlayerCharacter()
 
     /****************************************************************************
     Function: setAllGhostsVulnerable
@@ -655,21 +347,6 @@ public:
             mGhosts[i].setVulnerable(status);
         }
     } // END setAllGhostsVulnerable
-
-    /****************************************************************************
-    Function: ClearInitialGhostPosition
-    Parameter(s): GhostEntity & - Reference to entity that is becoming Active,
-                                  this function clears the Box Spawn Position
-    Output: N/A
-    Comments: Clears the Box Spawn position of the GhostEntity.
-    ****************************************************************************/
-    void ClearInitialGhostPosition(GhostEntity &entity) {
-        COORD Position;
-        Position.X = entity.getXPosition() + SCREEN_OFFSET_MARGIN;
-        Position.Y = entity.getYPosition();
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-        cout << ' ';
-    } // END ClearInitialGhostPosition
 
     /****************************************************************************
     Function: GatherGamePlayInput
@@ -722,10 +399,6 @@ public:
             {
                 PauseGame();
             }
-            if (mGameMap.getTotalDotsRemaining() == 0)
-            {
-                gameState = WINNING;
-            }
             break;
         }
         case READY:
@@ -757,17 +430,16 @@ public:
     ****************************************************************************/
     void Render()
     {
+        mGameMap.renderMap(); 
+        mPlayer.Render(); 
+        RenderAI();
         mScoreBoard.Render();
         mLivesBoard.Render();
         mCreditsBoard.Render();
-        mGameMap.renderMap();
-        mPlayer.Render();
-        RenderAI();
+        
         // TODO: Add the RenderEngine to run through all TrackedEntities for Rendering
         //          Score, Lives, Credits, etc.
     } // END Render
-
-    
 
     /****************************************************************************
     Function: RenderAI
@@ -777,40 +449,12 @@ public:
     ****************************************************************************/
     void RenderAI(bool forceRenderAll = false)
     {
-        COORD Position;
-        HANDLE outHandle = GetStdHandle(STD_OUTPUT_HANDLE);
         for (int i = 0; i < MAX_ENEMIES; ++i) {
-            if (!mGhosts[i].isActive() && !forceRenderAll) {
-                continue;
-            }
-            Position.X = mGhosts[i].getXPosition() + SCREEN_OFFSET_MARGIN;
-            Position.Y = mGhosts[i].getYPosition();
-            SetConsoleCursorPosition(outHandle, Position);
-            SetConsoleTextAttribute(outHandle, mGhosts[i].getGhostColor());
-            cout << mGhosts[i].getGhostIcon();
-            SetConsoleTextAttribute(outHandle, 7);
+            mGhosts[i].Render();
         }
     } // END RenderAI
 
-    /****************************************************************************
-    Function: RenderSingleAI
-    Parameter(s): GhostEntity & - Reference to the Ghost to manually render.
-    Output: N/A
-    Comments: Renders the provided Ghost AI on-screen.
-    ****************************************************************************/
-    void RenderSingleAI(GhostEntity &entity)
-    {
-        COORD Position;
-        Position.X = entity.getXPosition() + SCREEN_OFFSET_MARGIN;
-        Position.Y = entity.getYPosition();
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), entity.getGhostColor());
-        cout << entity.getGhostIcon();
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
-    } // END RenderSingleAI
-
-
-    /****************************************************************************
+      /****************************************************************************
     Function: RenderStatusText
     Parameter(s): const char * - String to display in the line below the Ghost
                                  Spawn box.
