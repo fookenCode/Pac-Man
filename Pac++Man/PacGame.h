@@ -39,7 +39,6 @@ public:
         mScoreBoard.setPosition(mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN * 2, SCORE_BOARD_HEIGHT_POSITION);
 
         mLivesBoard.setPosition(mGameMap.getMapWidth() + SCREEN_OFFSET_MARGIN * 2, LIVES_BOARD_HEIGHT_POSITION);
-        mLivesBoard.setLivesLeft(MAX_VISIBLE_LIVES);
         
         mCreditsBoard.setPosition(SCREEN_OFFSET_MARGIN, mGameMap.getMapHeight());
 
@@ -94,12 +93,8 @@ public:
             mGhosts[i].Reset();
             mGhosts[i].setMaxValidWidth(mGameMap.getMapEdge());
             if (i == 0) {
-                mGhosts[i].setActive(true);
                 mGhosts[i].setTarget(&mPlayer);
-                mGhosts[i].setXPos(AI_BOX_ACTIVE_X_POSITION);
-                mGhosts[i].setYPos(AI_BOX_ACTIVE_Y_POSITION);
-                mGhosts[i].setMovementDirection(LEFT);
-                mGhosts[i].setMovementSpeed(1);
+                mGhosts[i].initializeGhost();
             }
         }
 
@@ -328,7 +323,6 @@ public:
         if (CanMoveInSpecifiedDirection(direction, (int)mPlayer.getXPosition(), (int)mPlayer.getYPosition()))
         {
             mPlayer.setMovementDirection(direction);
-            mPlayer.setMovementSpeed(1);
         }
     } // END UpdatePlayerCharacter
 
@@ -430,12 +424,12 @@ public:
     ****************************************************************************/
     void Render()
     {
-        mGameMap.renderMap(); 
-        mPlayer.Render(); 
-        RenderAI();
         mScoreBoard.Render();
         mLivesBoard.Render();
         mCreditsBoard.Render();
+        mGameMap.renderMap(); 
+        mPlayer.Render(); 
+        RenderAI();
         
         // TODO: Add the RenderEngine to run through all TrackedEntities for Rendering
         //          Score, Lives, Credits, etc.
@@ -447,14 +441,14 @@ public:
     Output: N/A
     Comments: Renders the Active Ghost AI on-screen at their present positions.
     ****************************************************************************/
-    void RenderAI(bool forceRenderAll = false)
+    void RenderAI()
     {
         for (int i = 0; i < MAX_ENEMIES; ++i) {
             mGhosts[i].Render();
         }
     } // END RenderAI
 
-      /****************************************************************************
+    /****************************************************************************
     Function: RenderStatusText
     Parameter(s): const char * - String to display in the line below the Ghost
                                  Spawn box.

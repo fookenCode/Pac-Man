@@ -31,5 +31,5 @@ void ScoreBoard::Render() {
 }
 
 void ScoreBoard::Reset() {
-
+    this->scoreTotal = 0L;
 }

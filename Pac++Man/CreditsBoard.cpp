@@ -25,11 +25,10 @@ void CreditsBoard::Render() {
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
         std::cout << CREDITS_NAME_TEXT << creditTotal;
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
-
         setInvalidated(false);
     }
 }
 
 void CreditsBoard::Reset() {
-
+    // no-op
 }

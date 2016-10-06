@@ -12,6 +12,7 @@ enum LEVEL_COLORS {LVL_ONE=26, LVL_TWO=78, INVALID_LEVEL};
 enum WALL_GROUPS { INNER = 0, OUTER, BOTH, INVALID_GROUP };
 enum GAME_STATE { ATTRACT = 0, PAUSED, READY, RUNNING, WINNING };
 
+const static double MOVING_ENTITY_DEFAULT_SPEED     = 2.25;
 const static int SCORE_BOARD_HEIGHT_POSITION        = 2;
 const static int MAX_VISIBLE_LIVES                  = 3;
 const static int MAX_CREDITS_ALLOWED                = 99;
@@ -24,6 +25,7 @@ const static int DEFAULT_AI_Y_POSITION              = 13;
 const static int DEFAULT_AI_X_POSITION              = 14;
 const static int AI_BOX_ACTIVE_Y_POSITION           = 11;
 const static int AI_BOX_ACTIVE_X_POSITION           = 17;
+const static int MILLISECONDS_FPS_THRESHOLD         = 16;
 const static int SCREEN_OFFSET_MARGIN               = 5;
 const static int LIVES_BOARD_HEIGHT_POSITION        = 6;
 const static int STATUS_TEXT_OFFSET_MARGIN          = SCREEN_OFFSET_MARGIN + 11;

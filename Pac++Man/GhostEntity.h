@@ -11,6 +11,7 @@ class GhostEntity : public MovingEntity {
 private:
     enum GHOST_STATE {INVULNERABLE=0,VULNERABLE};
     int mVulnerableStatus,mColor, mRespawnTimer;
+    double timeToSwitchDir;
     char mGhostIcon;
     bool mActive;
 

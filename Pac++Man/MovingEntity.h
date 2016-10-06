@@ -6,16 +6,17 @@
 
 class MovingEntity : public Entity {
 protected:
-    int movementSpeed, movementDirection, maxValidWidth, maxValidHeight;
+    double movementSpeed;
+    int movementDirection, maxValidWidth, maxValidHeight;
 public:
     MovingEntity() { }
     virtual ~MovingEntity() { }
 
-    int getMovementSpeed() { return movementSpeed; }
+    double getMovementSpeed() { return movementSpeed; }
     int getMovementDirection() { return movementDirection; }
     int getMaxValidWidth() { return maxValidWidth; }
     int getMaxValidHeight() { return maxValidHeight; }
-    void setMovementSpeed(int newSpeed) { movementSpeed = newSpeed; }
+    void setMovementSpeed(double newSpeed) { movementSpeed = newSpeed; }
     void setMovementDirection(int newDirection) { movementDirection = newDirection; }
     void setMaxValidWidth(int newWidth) { maxValidWidth = newWidth; }
     void setMaxValidHeight(int newHeight) { maxValidHeight = newHeight; }

@@ -1,6 +1,7 @@
 #include "PlayerEntity.h"
 #include <Windows.h>
 #include <iostream>
+
 PlayerEntity::PlayerEntity() {
     // Initialize all Player Character Icons
     playerCharacterIcons[LEFT] = 0x3E;
@@ -8,11 +9,12 @@ PlayerEntity::PlayerEntity() {
     playerCharacterIcons[RIGHT] = 0x3C;
     playerCharacterIcons[DOWN] = 0x5E;
     setInvalidated(true);
+    setMovementSpeed(MOVING_ENTITY_DEFAULT_SPEED);
     Reset();
 }
 
 /****************************************************************************
-Function: reset
+Function: Reset
 Parameter(s): N/A
 Output: N/A
 Comments: Used to reset the status of the PlayerEntity to base.
@@ -20,7 +22,6 @@ Comments: Used to reset the status of the PlayerEntity to base.
 void PlayerEntity::Reset() {
     currentPlayerIcon = playerCharacterIcons[LEFT];
     setInvalidated(true);
-    setMovementSpeed(0);
     setMovementDirection(MAX_DIRECTION);
     setXPos(DEFAULT_PLAYER_X_POSITION);
     setYPos(DEFAULT_PLAYER_Y_POSITION);
@@ -42,9 +43,16 @@ void PlayerEntity::Render() {
         std::cout << "\033[33;1m" << this->getIconForDirection() << "\033[0m";
         setInvalidated(false);
     }
-    
 }
 
+/****************************************************************************
+Function: Update
+Parameter(s): unsigned - Byte that contains all eligible directions to move.
+double - Time (in milliseconds) since last update.
+Output: N/A
+Comments: Evaluates the direction the Player needs to proceed in, and calls
+Move() to perform the move.
+****************************************************************************/
 void PlayerEntity::Update(unsigned validDirections, double timeStep) {
     if (getMovementSpeed() <= 0)
     {
@@ -57,9 +65,17 @@ void PlayerEntity::Update(unsigned validDirections, double timeStep) {
     }
 }
 
+/****************************************************************************
+Function: Move
+Parameter(s): double - Time (in milliseconds) since last update.
+Output: N/A
+Comments: Moves in the current direction taking into consideration
+time elapsed.  Also appropriately sets the character to the Left or Right
+edge of the screen on wrap.
+****************************************************************************/
 void PlayerEntity::Move(double timeStep) {
     int movementDirection = getMovementDirection();
-    double movementSpeed = (double) getMovementSpeed() * timeStep;
+    double movementSpeed = (double) getMovementSpeed() / timeStep;
     double xPos = getXPosition();
     double yPos = getYPosition();
     double nextPos = 0.0;

@@ -277,6 +277,13 @@ bool GameMap::checkForEmptySpace(int xPos, int yPos) {
     return false;
 }
 
+/****************************************************************************
+Function: checkForEmptySpace (overload)
+Parameter(s): RenderQueuePosition & - Reference to struct that holds X/Y
+                                      positions.
+Output: Bool - Whether the space is a Dot, PowerDot, or Space.
+Comments: Tests position in the MapStrings for non-wall character.
+****************************************************************************/
 bool GameMap::checkForEmptySpace(RenderQueuePosition &posToCheck) {
     if (posToCheck.xPos >= 0 && posToCheck.xPos <= mapSizeX && posToCheck.yPos >= 0 && posToCheck.yPos < mapSizeY) {
         char toTest = mapStrings[posToCheck.yPos][posToCheck.xPos];
@@ -330,7 +337,6 @@ void GameMap::renderMap(bool forceFullRender) {
         }
     }
     else {
-        // TODO: Render only the positions found in the Queue/List/Vector/etc. RenderQueue
         RenderQueuePosition toRender;
         COORD Position;
         char charToPrint;
