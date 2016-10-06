@@ -185,6 +185,11 @@ void GameMap::initializeMapObject() {
     {
         strcpy_s(mapStrings[i], mapSizeX+1, unalteredMapStrings[i]);
     }
+
+    // HACK! HACK! HACK! - This is a temporary fix to allow for Reloading a level.
+    // To be removed once other levels are created to be loaded properly through 
+    // File load behavior in GameMap::loadMap() call.
+    totalDots = mapLoadedTotalDots;
 }
 
 /****************************************************************************
@@ -421,6 +426,8 @@ bool GameMap::loadMap() {
             for (int i = 0; i < mapSizeY; ++i) {
                 unalteredMapStrings[i][mapSizeX] = '\0';
             }
+            // HACK! HACK! HACK! - Once new levels are created, this code will no longer be necessary
+            mapLoadedTotalDots = totalDots;
             return true;
         }
     }

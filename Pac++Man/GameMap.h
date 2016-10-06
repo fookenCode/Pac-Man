@@ -16,7 +16,7 @@ public:
     };
 private:
     int mapSizeX, mapSizeY, currentLevel;
-    int totalDots;
+    int totalDots, mapLoadedTotalDots;
     char **mapStrings, **unalteredMapStrings;
     std::vector<RenderQueuePosition> renderQueue;
 public:
@@ -31,6 +31,7 @@ public:
     
     int getCurrentLevel() { return currentLevel; }
     void setCurrentLevel(int newLevel) { currentLevel = newLevel; }
+    void incrementCurrentLevel() { currentLevel++; }
 
     void pushRenderQueuePosition(RenderQueuePosition newPos);
 

@@ -60,7 +60,7 @@ int main(int args, char *argv)
                 cout << "FPS: " << fps;
             }
         }
-    } while (!GetAsyncKeyState(VK_ESCAPE) && myGame.IsGameRunning());
+    } while (!GetAsyncKeyState(VK_ESCAPE));
     // GAME END
     myGame.RenderStatusText(GAMEOVER_TEXT);
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), FrameCounterPosition);
