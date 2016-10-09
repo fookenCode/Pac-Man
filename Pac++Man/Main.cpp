@@ -18,6 +18,11 @@ int main(int args, char *argv)
     SetConsoleScreenBufferSize(hOutput, bufferSize);
     SetConsoleWindowInfo(hOutput, TRUE, &windowDimensions);
     SetConsoleTitleA(TITLE_WINDOW_TEXT);
+    HWND hWnd = FindWindow(NULL, TITLE_WINDOW_TEXT);
+
+    if (hWnd == NULL) {
+        OutputDebugString("Window was not found!\n");
+    }
     // turn the cursor off
     info.bVisible = FALSE;
     info.dwSize = 1;
@@ -41,6 +46,13 @@ int main(int args, char *argv)
     lowestFPS = highestFPS = 0.0;
     do
     {
+        if (hWnd != GetForegroundWindow()) {
+            // Only trigger the PauseGame function if the Game State
+            // is not already PAUSED
+            if (!myGame.IsPaused()) {
+                myGame.PauseGame();
+            }
+        }
         myGame.GatherGamePlayInput();
         if (clock() - gameStart >= MILLISECONDS_FPS_THRESHOLD)
         {

@@ -56,6 +56,7 @@ public:
     bool HasCredits() { return (mCreditsBoard.getCreditTotal() > 0); }
     bool IsGameRunning() { return !((gameState == GAME_OVER || gameState == RUNNING) && IsGameOver()); }
     bool IsGameOver()    { return (mLivesBoard.getLivesLeft() < 0); }
+    bool IsPaused() { return (gameState == PAUSED); }
     int  getGameState()  { return gameState; }
     void Reset();
     void RestartLevel();
