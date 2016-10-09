@@ -28,8 +28,20 @@ void ScoreBoard::Render() {
         
         setInvalidated(false);
     }
-}
+} // END Render
 
+/****************************************************************************
+Function: Reset
+Parameter(s): N/A
+Output: N/A
+Comments: Resets the internal score to Zero for next game.
+****************************************************************************/
 void ScoreBoard::Reset() {
     this->scoreTotal = 0L;
-}
+    COORD Position;
+    Position.X = (int)xPos;
+    Position.Y = (int)yPos+1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
+    std::cout << CLEAR_STATUS_TEXT;
+    setInvalidated(true);
+} // END Reset

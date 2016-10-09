@@ -31,9 +31,9 @@ void LivesBoard::Render() {
         // Reset the Invalidated flag
         isInvalidated = false;
     }
-}
+} // END Render
 
 void LivesBoard::Reset() {
     livesLeft = MAX_VISIBLE_LIVES;
     isInvalidated = false;
-}
+} // END Reset

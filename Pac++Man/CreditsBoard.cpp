@@ -27,8 +27,8 @@ void CreditsBoard::Render() {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
         setInvalidated(false);
     }
-}
+} // END Render
 
 void CreditsBoard::Reset() {
     // no-op
-}
+} // END Reset

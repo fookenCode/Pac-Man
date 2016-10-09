@@ -32,7 +32,7 @@ void GhostEntity::Reset() {
     timeToSwitchDir = 0.0;
     mActive = false;
     setInvalidated(true);
-}
+} // END Reset
 
 /****************************************************************************
 Function: Render
@@ -49,10 +49,9 @@ void GhostEntity::Render() {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), getGhostColor());
         std::cout << getGhostIcon();
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
-
         setInvalidated(false);
     }
-}
+} // END Render
 
 /****************************************************************************
 Function: initializeGhost
@@ -67,7 +66,7 @@ void GhostEntity::initializeGhost() {
     setYPos(AI_BOX_ACTIVE_Y_POSITION);
     setMovementDirection(LEFT);
     setInvalidated(true);
-}
+} // END initializeGhost
 
 /****************************************************************************
 Function: Update
@@ -99,8 +98,29 @@ void GhostEntity::Update(unsigned validDirections, double timeStep) {
             break;
         };
     
-        if (canMoveNext || !canMoveCurr) {
+        if (canMoveNext) {
             setMovementDirection(nextMoveDir);
+        }
+        else if (!canMoveCurr) {
+            switch (getMovementDirection()) {
+            case LEFT:
+                nextMoveDir = RIGHT;
+                break;
+            case RIGHT:
+                nextMoveDir = LEFT;
+                break;
+            case UP:
+                nextMoveDir = DOWN;
+                break;
+            case DOWN:
+                nextMoveDir = UP;
+                break;
+            default:
+                break;
+            };
+
+            setMovementDirection(nextMoveDir);
+            Move(timeStep);
         }
 
         // Allow Ghost to update only after 10 frames
@@ -111,7 +131,7 @@ void GhostEntity::Update(unsigned validDirections, double timeStep) {
     if (canMoveNext || canMoveCurr) {
         Move(timeStep);
     }
-}
+} // END Update
 
 /****************************************************************************
 Function: Move
@@ -156,4 +176,4 @@ void GhostEntity::Move(double timeStep) {
         setYPos(nextPos);
         break;
     };
-}
+} // END Move

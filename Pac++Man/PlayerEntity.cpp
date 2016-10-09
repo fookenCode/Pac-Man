@@ -25,7 +25,7 @@ void PlayerEntity::Reset() {
     setMovementDirection(MAX_DIRECTION);
     setXPos(DEFAULT_PLAYER_X_POSITION);
     setYPos(DEFAULT_PLAYER_Y_POSITION);
-}
+} // END Reset
 
 /****************************************************************************
 Function: Render
@@ -43,7 +43,7 @@ void PlayerEntity::Render() {
         std::cout << "\033[33;1m" << this->getIconForDirection() << "\033[0m";
         setInvalidated(false);
     }
-}
+} // END Render
 
 /****************************************************************************
 Function: Update
@@ -63,7 +63,7 @@ void PlayerEntity::Update(unsigned validDirections, double timeStep) {
     {
         Move(timeStep);
     }
-}
+} // END Update
 
 /****************************************************************************
 Function: Move
@@ -106,4 +106,4 @@ void PlayerEntity::Move(double timeStep) {
         setYPos(nextPos);
         break;
     }
-}
+} // END Move

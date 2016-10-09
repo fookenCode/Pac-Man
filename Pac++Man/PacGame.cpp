@@ -46,7 +46,8 @@ Parameter(s): N/A
 Output: N/A
 Comments: Called when Player is caught by Ghosts or Level Completes
 ****************************************************************************/
-void PacGame::RestartLevel() {
+void PacGame::RestartLevel() 
+{
     mGameMap.setCharacterAtPosition(' ', (int)mPlayer.getXPosition(), (int)mPlayer.getYPosition());
     Reset();
     restartDelayTimer = GetTickCount();
@@ -63,38 +64,35 @@ void PacGame::RestartLevel() {
 
 } // END RestartLevel
 
-  /****************************************************************************
-  Function: TriggerNewLevel
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Called to ready the game for the next level to be loaded.
-  ****************************************************************************/
-void PacGame::TriggerNewLevel() {
-    mGameMap.loadMap();
-    mGameMap.initializeMapObject();
-    Reset();
-    restartDelayTimer = GetTickCount();
-    if (mLivesBoard.getLivesLeft() >= 0) {
-        RenderStatusText(READY_TEXT);
-        gameState = READY;
-    }
-    else {
+/****************************************************************************
+Function: TriggerNewLevel
+Parameter(s): N/A
+Output: N/A
+Comments: Called to ready the game for the next level to be loaded.
+****************************************************************************/
+void PacGame::TriggerNewLevel() 
+{
+    if (gameState == GAME_OVER) {
         // GAME_OVER game state reset the score/lives
-        // don't change game state
+        // and the level
         mLivesBoard.setLivesLeft(MAX_VISIBLE_LIVES);
-        mScoreBoard.setScoreTotal(0);
+        mScoreBoard.Reset();
         mGameMap.setCurrentLevel(1);
     }
+    mGameMap.loadMap();
+    Reset();
+    restartDelayTimer = GetTickCount();
 } // END TriggerNewLevel
 
-  /****************************************************************************
-  Function: PauseGame
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Moves Game State between PAUSED and RUNNING states to allow for
-  users to take a break.
-  ****************************************************************************/
-void PacGame::PauseGame() {
+/****************************************************************************
+Function: PauseGame
+Parameter(s): N/A
+Output: N/A
+Comments: Moves Game State between PAUSED and RUNNING states to allow for
+users to take a break.
+****************************************************************************/
+void PacGame::PauseGame() 
+{
     if (gameState == RUNNING) {
         gameState = PAUSED;
         RenderStatusText(PAUSED_TEXT);
@@ -106,17 +104,15 @@ void PacGame::PauseGame() {
     }
 } // END PauseGame
 
-  /****************************************************************************
-  Function: Update
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Game Update on time interval
-  ****************************************************************************/
+/****************************************************************************
+Function: Update
+Parameter(s): N/A
+Output: N/A
+Comments: Game Update on time interval
+****************************************************************************/
 void PacGame::Update(double timeStep)
 {
     if (gameState == RUNNING) {
-        
-        
         if (mGameMap.getTotalDotsRemaining() <= 0) {
             mGameMap.incrementCurrentLevel();
             restartDelayTimer = GetTickCount();
@@ -142,16 +138,16 @@ void PacGame::Update(double timeStep)
     }
 } // END Update
 
-  /****************************************************************************
-  Function: CanMoveInSpecifiedDirection
-  Parameter(s): int - Enum value (See @Constants.h) for valid Directions input.
-  int - X coordinate of Position to check
-  int - Y coordinate of Position to check
-  int - Movement speed (default = 1)
-  Output: bool - True if move is allowed, False if not.
-  Comments: Universal check for all Entities on the Map for
-  whether next position is valid move.
-  ****************************************************************************/
+/****************************************************************************
+Function: CanMoveInSpecifiedDirection
+Parameter(s): int - Enum value (See @Constants.h) for valid Directions input.
+int - X coordinate of Position to check
+int - Y coordinate of Position to check
+int - Movement speed (default = 1)
+Output: bool - True if move is allowed, False if not.
+Comments: Universal check for all Entities on the Map for
+whether next position is valid move.
+****************************************************************************/
 bool PacGame::CanMoveInSpecifiedDirection(int direction, int xPos, int yPos, int movementSpeed)
 {
     GameMap::RenderQueuePosition posToCheck(xPos, yPos);
@@ -173,27 +169,29 @@ bool PacGame::CanMoveInSpecifiedDirection(int direction, int xPos, int yPos, int
     return mGameMap.checkForEmptySpace(posToCheck);
 } // END CanMoveInSpecifiedDirection
 
-  /****************************************************************************
-  Function: TriggerGhostEaten
-  Parameter(s): GhostEntity & - Reference to the Ghost that was just caught
-  by player.
-  Output: N/A
-  Comments: Resets the GhostEntity back to Spawn Box position with Respawn Timer.
-  ****************************************************************************/
-void PacGame::TriggerGhostEaten(GhostEntity &entity) {
+/****************************************************************************
+Function: TriggerGhostEaten
+Parameter(s): GhostEntity & - Reference to the Ghost that was just caught
+by player.
+Output: N/A
+Comments: Resets the GhostEntity back to Spawn Box position with Respawn Timer.
+****************************************************************************/
+void PacGame::TriggerGhostEaten(GhostEntity &entity) 
+{
     mScoreBoard.addScoreTotal(GHOST_SCORE_AMOUNT*ghostMultiplier++);
     entity.Reset();
     entity.setRespawnTimer(GetTickCount());
     entity.Render();
 } // END TriggerGhostEaten
 
-  /****************************************************************************
-  Function: UpdateAICharacters
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Update all Active AI currently on the Map
-  ****************************************************************************/
-void PacGame::UpdateAICharacters(double timeStep) {
+/****************************************************************************
+Function: UpdateAICharacters
+Parameter(s): N/A
+Output: N/A
+Comments: Update all Active AI currently on the Map
+****************************************************************************/
+void PacGame::UpdateAICharacters(double timeStep) 
+{
     for (int i = 0; i < MAX_ENEMIES; ++i) {
         if (!mGhosts[i].isActive()) {
             int respawnTimer = mGhosts[i].getRespawnTimer();
@@ -218,14 +216,14 @@ void PacGame::UpdateAICharacters(double timeStep) {
     CheckCollisions();
 } // END UpdateAICharacters
 
-
-  /*********************************************************************************
-  Function: CheckCollisions
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Checks for collisions of Player against the Map and Active Ghosts.
-  *********************************************************************************/
-void PacGame::CheckCollisions() {
+/*********************************************************************************
+Function: CheckCollisions
+Parameter(s): N/A
+Output: N/A
+Comments: Checks for collisions of Player against the Map and Active Ghosts.
+*********************************************************************************/
+void PacGame::CheckCollisions() 
+{
     char charAtPos = ' ';
     int xPos = (int)mPlayer.getXPosition();
     int yPos = (int)mPlayer.getYPosition();
@@ -263,7 +261,6 @@ void PacGame::CheckCollisions() {
     }
 } // END CheckCollisions
 
-
 /*********************************************************************************
 Function: UpdatePlayerCharacter
 Parameter(s): N/A
@@ -294,26 +291,27 @@ void PacGame::UpdatePlayerDirection(int direction)
     }
 } // END UpdatePlayerDirection
 
-  /****************************************************************************
-  Function: setAllGhostsVulnerable
-  Parameter(s): bool - Boolean value used to set whether the Ghosts are
-  vulnerable after Player collides with specific object.
-  Output: N/A
-  Comments: Updates all Active Ghost objects on Map vulnerability status.
-  ****************************************************************************/
-void PacGame::setAllGhostsVulnerable(bool status) {
+/****************************************************************************
+Function: setAllGhostsVulnerable
+Parameter(s): bool - Boolean value used to set whether the Ghosts are
+vulnerable after Player collides with specific object.
+Output: N/A
+Comments: Updates all Active Ghost objects on Map vulnerability status.
+****************************************************************************/
+void PacGame::setAllGhostsVulnerable(bool status) 
+{
     for (int i = 0; i < MAX_ENEMIES; ++i) {
         mGhosts[i].setVulnerable(status);
     }
 } // END setAllGhostsVulnerable
 
-  /****************************************************************************
-  Function: GatherGamePlayInput
-  Parameter(s): N/A
-  Output: N/A
-  Comments: State machine for the GameState, retrieves input and updates Player
-  when detected.
-  ****************************************************************************/
+/****************************************************************************
+Function: GatherGamePlayInput
+Parameter(s): N/A
+Output: N/A
+Comments: State machine for the GameState, retrieves input and updates Player
+when detected.
+****************************************************************************/
 void PacGame::GatherGamePlayInput()
 {
     switch (gameState)
@@ -380,8 +378,9 @@ void PacGame::GatherGamePlayInput()
         break;
     case NEXT_LEVEL:
         if (GetTickCount() - restartDelayTimer > 3000) {
-            gameState = READY;
             TriggerNewLevel();
+            gameState = READY;
+            RenderStatusText(READY_TEXT);
         }
         break;
     case GAME_OVER:
@@ -398,12 +397,12 @@ void PacGame::GatherGamePlayInput()
     };
 } // END GatherGamePlayInput
 
-  /****************************************************************************
-  Function: Render
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Renders the entire frame and update for all Objects for Game.
-  ****************************************************************************/
+/****************************************************************************
+Function: Render
+Parameter(s): N/A
+Output: N/A
+Comments: Renders the entire frame and update for all Objects for Game.
+****************************************************************************/
 void PacGame::Render()
 {
     mScoreBoard.Render();
@@ -417,12 +416,12 @@ void PacGame::Render()
     //          Score, Lives, Credits, etc.
 } // END Render
 
-  /****************************************************************************
-  Function: RenderAI
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Renders the Active Ghost AI on-screen at their present positions.
-  ****************************************************************************/
+/****************************************************************************
+Function: RenderAI
+Parameter(s): N/A
+Output: N/A
+Comments: Renders the Active Ghost AI on-screen at their present positions.
+****************************************************************************/
 void PacGame::RenderAI()
 {
     for (int i = 0; i < MAX_ENEMIES; ++i) {
@@ -430,15 +429,15 @@ void PacGame::RenderAI()
     }
 } // END RenderAI
 
-  /****************************************************************************
-  Function: RenderStatusText
-  Parameter(s): const char * - String to display in the line below the Ghost
-  Spawn box.
-  Output: N/A
-  Comments: Renders string to screen below Ghost Spawn box.
-  ****************************************************************************/
-void PacGame::RenderStatusText(const char *stringToDisplay) {
-
+/****************************************************************************
+Function: RenderStatusText
+Parameter(s): const char * - String to display in the line below the Ghost
+Spawn box.
+Output: N/A
+Comments: Renders string to screen below Ghost Spawn box.
+****************************************************************************/
+void PacGame::RenderStatusText(const char *stringToDisplay) 
+{
     COORD Position;
     Position.X = STATUS_TEXT_OFFSET_MARGIN;
     Position.Y = 16;
@@ -453,14 +452,15 @@ void PacGame::RenderStatusText(const char *stringToDisplay) {
     cout << stringToDisplay;
 } // END RenderStatusText
 
-  /****************************************************************************
-  Function: ClearStatusText
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Clears the Text from the screen for gameplay at the line below
-  the Ghost Spawn box
-  ****************************************************************************/
-void PacGame::ClearStatusText() {
+/****************************************************************************
+Function: ClearStatusText
+Parameter(s): N/A
+Output: N/A
+Comments: Clears the Text from the screen for gameplay at the line below
+the Ghost Spawn box
+****************************************************************************/
+void PacGame::ClearStatusText() 
+{
     COORD Position;
     Position.X = STATUS_TEXT_OFFSET_MARGIN;
     Position.Y = 16;
