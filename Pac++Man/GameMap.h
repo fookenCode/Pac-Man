@@ -15,9 +15,11 @@ public:
         RenderQueuePosition(int xPos, int yPos):xPos(xPos), yPos(yPos) { }
     };
 private:
-    int mapSizeX, mapSizeY, currentLevel;
+    const static int MAX_LEVEL_STRING_LENGTH = 16;
+    int mapSizeX, mapSizeY, currentLevel, backColor, foreColor;
     int totalDots, mapLoadedTotalDots;
     char **mapStrings, **unalteredMapStrings;
+    char levelStatusString[MAX_LEVEL_STRING_LENGTH];
     std::vector<RenderQueuePosition> renderQueue;
 public:
 
@@ -30,10 +32,12 @@ public:
     void renderMap(bool forceFullRender = false);
     
     int getCurrentLevel() { return currentLevel; }
+    const char *getCurrentLevelString();
     void setCurrentLevel(int newLevel) { currentLevel = newLevel; }
     void incrementCurrentLevel() { currentLevel++; }
 
     void pushRenderQueuePosition(RenderQueuePosition newPos);
+    void clearRenderQueue();
 
     int getTotalDotsRemaining() { return this->totalDots; }
     inline void decrementDotsRemaining() { this->totalDots--; }

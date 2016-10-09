@@ -10,7 +10,7 @@ enum DIRECTION_BITS {LEFT_BIT = 0x1, UP_BIT = 0x2, RIGHT_BIT = 0x4, DOWN_BIT = 0
 enum AI_COLORS { GHOST_BLUE =(0x0008 | 0x0004 | 0x0001 | 0x0002 | 0x0010 | 0x0080), GREEN = 10, CYAN, RED, PINK, INVALID_COLOR };
 enum LEVEL_COLORS {LVL_ONE=26, LVL_TWO=78, INVALID_LEVEL};
 enum WALL_GROUPS { INNER = 0, OUTER, BOTH, INVALID_GROUP };
-enum GAME_STATE { ATTRACT = 0, PAUSED, READY, RUNNING, GAME_OVER};
+enum GAME_STATE { ATTRACT = 0, PAUSED, READY, RUNNING, NEXT_LEVEL, GAME_OVER};
 
 const static double MOVING_ENTITY_DEFAULT_SPEED     = 2.25;
 const static int SCORE_BOARD_HEIGHT_POSITION        = 2;
@@ -44,6 +44,7 @@ const static char *LEVEL_FILENAME_TEMPLATE          = "Assets\\Levels\\PacMan_Le
 const static char *SCORE_NAME_TEXT                  = "Score";
 const static char *LIVES_NAME_TEXT                  = "Lives";
 const static char *CREDITS_NAME_TEXT                = "Credits ";
+const static char *LEVEL_TEMPLATE_TEXT              = "Level %d";
 const static char *CLEAR_STATUS_TEXT                = "              ";
 const static char *PRESS_START_TEXT                 = "Press '1'";
 const static char *GAMEOVER_TEXT                    = "Game Over";

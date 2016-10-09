@@ -31,6 +31,7 @@ void PacGame::Reset()
     Position.Y = 0;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Position);
     // Render all components
+    mGameMap.clearRenderQueue();
     mGameMap.renderMap(true);
     mScoreBoard.Render();
     mLivesBoard.Render();
@@ -39,12 +40,12 @@ void PacGame::Reset()
     mPlayer.Render();
 } // END Reset
 
-  /****************************************************************************
-  Function: RestartLevel
-  Parameter(s): N/A
-  Output: N/A
-  Comments: Called when Player is caught by Ghosts or Level Completes
-  ****************************************************************************/
+/****************************************************************************
+Function: RestartLevel
+Parameter(s): N/A
+Output: N/A
+Comments: Called when Player is caught by Ghosts or Level Completes
+****************************************************************************/
 void PacGame::RestartLevel() {
     mGameMap.setCharacterAtPosition(' ', (int)mPlayer.getXPosition(), (int)mPlayer.getYPosition());
     Reset();
@@ -56,13 +57,20 @@ void PacGame::RestartLevel() {
         gameState = READY;
     }
     else {
+        RenderStatusText(GAMEOVER_TEXT);
         gameState = GAME_OVER;
     }
 
 } // END RestartLevel
 
-
+  /****************************************************************************
+  Function: TriggerNewLevel
+  Parameter(s): N/A
+  Output: N/A
+  Comments: Called to ready the game for the next level to be loaded.
+  ****************************************************************************/
 void PacGame::TriggerNewLevel() {
+    mGameMap.loadMap();
     mGameMap.initializeMapObject();
     Reset();
     restartDelayTimer = GetTickCount();
@@ -75,8 +83,9 @@ void PacGame::TriggerNewLevel() {
         // don't change game state
         mLivesBoard.setLivesLeft(MAX_VISIBLE_LIVES);
         mScoreBoard.setScoreTotal(0);
+        mGameMap.setCurrentLevel(1);
     }
-}
+} // END TriggerNewLevel
 
   /****************************************************************************
   Function: PauseGame
@@ -110,8 +119,9 @@ void PacGame::Update(double timeStep)
         
         if (mGameMap.getTotalDotsRemaining() <= 0) {
             mGameMap.incrementCurrentLevel();
-            TriggerNewLevel();
-            gameState = READY;
+            restartDelayTimer = GetTickCount();
+            RenderStatusText(mGameMap.getCurrentLevelString());
+            gameState = NEXT_LEVEL;
         }
         else if (!IsGameRunning()) {
             RenderStatusText(GAMEOVER_TEXT);
@@ -251,7 +261,7 @@ void PacGame::CheckCollisions() {
             }
         }
     }
-}
+} // END CheckCollisions
 
 
 /*********************************************************************************
@@ -274,7 +284,7 @@ void PacGame::UpdatePlayerCharacter(double timeStep)
         mGameMap.pushRenderQueuePosition(GameMap::RenderQueuePosition(cacheXPos, cacheYPos));
         CheckCollisions();
     }
-}
+} // END UpdatePlayerCharacter
 
 void PacGame::UpdatePlayerDirection(int direction)
 {
@@ -282,7 +292,7 @@ void PacGame::UpdatePlayerDirection(int direction)
     {
         mPlayer.setMovementDirection(direction);
     }
-} // END UpdatePlayerCharacter
+} // END UpdatePlayerDirection
 
   /****************************************************************************
   Function: setAllGhostsVulnerable
@@ -293,9 +303,6 @@ void PacGame::UpdatePlayerDirection(int direction)
   ****************************************************************************/
 void PacGame::setAllGhostsVulnerable(bool status) {
     for (int i = 0; i < MAX_ENEMIES; ++i) {
-        if (!mGhosts[i].isActive()) {
-            continue;
-        }
         mGhosts[i].setVulnerable(status);
     }
 } // END setAllGhostsVulnerable
@@ -371,12 +378,17 @@ void PacGame::GatherGamePlayInput()
             PauseGame();
         }
         break;
+    case NEXT_LEVEL:
+        if (GetTickCount() - restartDelayTimer > 3000) {
+            gameState = READY;
+            TriggerNewLevel();
+        }
+        break;
     case GAME_OVER:
     {
         if (GetTickCount() - restartDelayTimer > 3000) {
             ClearStatusText();
             TriggerNewLevel();
-            Reset();
             RenderStatusText(PRESS_START_TEXT);
             gameState = ATTRACT;
         }

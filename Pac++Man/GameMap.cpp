@@ -8,7 +8,8 @@ Author: fookenCode
 #include <Windows.h>
 #include "Constants.h"
 
-GameMap::GameMap() : mapSizeY(0), mapSizeX(0), totalDots(0), currentLevel(1), mapStrings(nullptr), unalteredMapStrings(nullptr){
+GameMap::GameMap() : mapSizeY(0), mapSizeX(0), totalDots(0), currentLevel(1), 
+                     backColor(0), foreColor(0), mapStrings(nullptr), unalteredMapStrings(nullptr) {
     renderQueue.clear();
     loadMap();
     initializeMapObject();
@@ -329,7 +330,7 @@ void GameMap::renderMap(bool forceFullRender) {
                     cout << "\033[0m" << mapStrings[i][j];
                 }
                 else {
-                    cout << "\033[32;44;1m";
+                    cout << "\033[" << backColor << ";" << foreColor << ";1m";
                     if (mapStrings[i][j] == MAP_FILLER_CHARACTER) {
                         cout << ' ';
                     }
@@ -359,7 +360,7 @@ void GameMap::renderMap(bool forceFullRender) {
                 cout << "\033[0m" << charToPrint;
             }
             else {
-                cout << "\033[32;44;1m" << charToPrint;
+                cout << "\033[" << backColor << ';' << foreColor << ";1m" << charToPrint;
             }
 
             renderQueue.pop_back();
@@ -388,6 +389,10 @@ bool GameMap::loadMap() {
             mapFileInput >> tempX;
             mapFileInput >> tempY;
             
+            // Grab colors from file
+            mapFileInput >> foreColor;
+            mapFileInput >> backColor;
+
             // If the dimensions have not changed, don't do expensive memory allocations
             if (tempX != mapSizeX || tempY != mapSizeY) {
                 if (mapStrings != nullptr || unalteredMapStrings != nullptr) {
@@ -426,6 +431,7 @@ bool GameMap::loadMap() {
             for (int i = 0; i < mapSizeY; ++i) {
                 unalteredMapStrings[i][mapSizeX] = '\0';
             }
+            mapFileInput.close();
             // HACK! HACK! HACK! - Once new levels are created, this code will no longer be necessary
             mapLoadedTotalDots = totalDots;
             return true;
@@ -445,6 +451,17 @@ Comments: Adds the RenderQueuePosition to the Vector to limit the tiles of
 ****************************************************************************/
 void GameMap::pushRenderQueuePosition(RenderQueuePosition newPos) {
     renderQueue.push_back(newPos);
+}
+
+/****************************************************************************
+Function: clearRenderQueue
+Parameter(s): N/A
+Output: N/A
+Comments: Empties the entire GameMap position queue to avoid re-rendering
+spaces from reset/new level.
+****************************************************************************/
+void GameMap::clearRenderQueue() {
+    renderQueue.clear();
 }
 
 /****************************************************************************
@@ -478,4 +495,12 @@ char GameMap::getCharacterAtPosition(int xPos, int yPos) {
     }
     
     return mapStrings[yPos][xPos];
+}
+
+const char *GameMap::getCurrentLevelString() {
+    memset(levelStatusString, 0, sizeof(char)*MAX_LEVEL_STRING_LENGTH);
+    if (currentLevel > 0) {
+        sprintf_s(levelStatusString, LEVEL_TEMPLATE_TEXT, currentLevel);
+    }
+    return levelStatusString;
 }
